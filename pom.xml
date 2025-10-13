@@ -1,0 +1,338 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>io.github.wistefan</groupId>
+    <artifactId>oid4vp-client-lib</artifactId>
+    <version>0.0.1</version>
+    <packaging>jar</packaging>
+
+    <developers>
+        <developer>
+            <name>${project.author.name}</name>
+            <email>${project.author.email}</email>
+        </developer>
+    </developers>
+
+    <name>${project.groupId}:${project.artifactId}</name>
+    <description>${project.description}</description>
+    <url>${project.url}</url>
+    <licenses>
+        <license>
+            <name>${project.license.name}</name>
+            <url>${project.license.url}</url>
+        </license>
+    </licenses>
+    <scm>
+        <connection>scm:git:git://github.com/wistefan/oid4vp-client-lib.git</connection>
+        <developerConnection>scm:git:git@github.com:wistefan/oid4vp-client-lib.git</developerConnection>
+        <url>https://github.com/wistefan/oid4vp-client-lib/tree/main</url>
+        <tag>HEAD</tag>
+    </scm>
+
+
+    <distributionManagement>
+        <snapshotRepository>
+            <id>sonatype.org</id>
+            <url>https://central.sonatype.com/repository/maven-snapshots/</url>
+        </snapshotRepository>
+    </distributionManagement>
+
+    <properties>
+        <jdk.version>21</jdk.version>
+        <release.version>21</release.version>
+
+        <!-- project info -->
+        <project.author.name>Stefan Wiedemann</project.author.name>
+        <project.author.email>stefan.wiedemann@seamware.com</project.author.email>
+        <project.description>OpenID4VP client library. Provides capabilities to authenticate via Verifiable Credentials
+            using the OID4VP Same-Device flow.
+        </project.description>
+        <project.summary>OpenID4VP Client Library.</project.summary>
+        <project.url>https://github.com/wistefan/oid4vp-client-lib</project.url>
+        <project.license.name>Apache License 2.0</project.license.name>
+        <project.license.identifier>Apache-2.0</project.license.identifier>
+        <project.license.url>https://www.apache.org/licenses/LICENSE-2.0.txt</project.license.url>
+        <project.title>OpenID4VP Client</project.title>
+        <project.contact.email>stefan.wiedemann@seamware.com</project.contact.email>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+
+        <!-- gpg signin -->
+        <gpg.keyname>key</gpg.keyname>
+        <gpg.passphrase>pass</gpg.passphrase>
+
+        <!-- lazy dev -->
+        <version.org.projectlombok>1.18.30</version.org.projectlombok>
+
+        <version.com.fasterxml.jackson.core>2.20.0</version.com.fasterxml.jackson.core>
+        <version.io.projectreactor.reactor-core>3.7.11</version.io.projectreactor.reactor-core>
+        <version.org.slf4j>2.0.17</version.org.slf4j>
+        <version.com.nimbusds.nimbus-jose-jwt>10.5</version.com.nimbusds.nimbus-jose-jwt>
+        <version.org.bouncycastle>1.81</version.org.bouncycastle>
+        <version.io.github.wistefan.dcql-java>0.0.3</version.io.github.wistefan.dcql-java>
+     
+        <!-- build -->
+        <version.org.codehaus.mojo.build-helper-maven-plugin>3.6.1</version.org.codehaus.mojo.build-helper-maven-plugin>
+        <version.org.apache.maven.plugins.maven-source-plugin>3.3.1
+        </version.org.apache.maven.plugins.maven-source-plugin>
+        <version.org.apache.maven.plugins.maven-compiler-plugin>3.14.0
+        </version.org.apache.maven.plugins.maven-compiler-plugin>
+        <version.org.apache.maven.plugins.maven-site-plugin>3.21.0</version.org.apache.maven.plugins.maven-site-plugin>
+        <version.com.github.spotbugs.maven-plugin>4.9.4.2</version.com.github.spotbugs.maven-plugin>
+        <version.org.jacoco.maven-plugin>0.8.13</version.org.jacoco.maven-plugin>
+        <version.org.apache.maven.plugins.maven-javadoc-plugin>3.11.3
+        </version.org.apache.maven.plugins.maven-javadoc-plugin>
+        <version.org.sonatype.central.publishing-plugin>0.8.0</version.org.sonatype.central.publishing-plugin>
+        <version.org.apache.maven.plugins.maven-gpg-plugin>3.2.8</version.org.apache.maven.plugins.maven-gpg-plugin>
+
+        <!-- test -->
+        <version.org.junit.jupiter>5.13.4</version.org.junit.jupiter>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>io.github.wistefan</groupId>
+            <artifactId>dcql-java</artifactId>
+            <version>${version.io.github.wistefan.dcql-java}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>${version.org.projectlombok}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>${version.com.fasterxml.jackson.core}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-core</artifactId>
+            <version>${version.com.fasterxml.jackson.core}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.projectreactor</groupId>
+            <artifactId>reactor-core</artifactId>
+            <version>${version.io.projectreactor.reactor-core}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>${version.org.slf4j}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.nimbusds</groupId>
+            <artifactId>nimbus-jose-jwt</artifactId>
+            <version>${version.com.nimbusds.nimbus-jose-jwt}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcprov-jdk18on</artifactId>
+            <version>${version.org.bouncycastle}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcpkix-jdk18on</artifactId>
+            <version>${version.org.bouncycastle}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- Base58 encoding -->
+        <dependency>
+            <groupId>org.bitcoinj</groupId>
+            <artifactId>bitcoinj-core</artifactId>
+            <version>0.17</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- test -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
+            <version>${version.org.junit.jupiter}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-api</artifactId>
+            <version>${version.org.junit.jupiter}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-params</artifactId>
+            <version>${version.org.junit.jupiter}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-simple</artifactId>
+            <version>2.0.17</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+
+    <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+            </resource>
+        </resources>
+        <plugins>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <version>${version.org.codehaus.mojo.build-helper-maven-plugin}</version>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>${version.org.apache.maven.plugins.maven-compiler-plugin}</version>
+                <configuration>
+                    <source>${jdk.version}</source>
+                    <target>${jdk.version}</target>
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                            <version>${version.org.projectlombok}</version>
+                        </path>
+                    </annotationProcessorPaths>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>test-compile</id>
+                        <goals>
+                            <goal>testCompile</goal>
+                        </goals>
+                        <configuration>
+                            <annotationProcessorPaths>
+                                <path>
+                                    <groupId>org.projectlombok</groupId>
+                                    <artifactId>lombok</artifactId>
+                                    <version>${version.org.projectlombok}</version>
+                                </path>
+                            </annotationProcessorPaths>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-site-plugin</artifactId>
+                <version>${version.org.apache.maven.plugins.maven-site-plugin}</version>
+            </plugin>
+            <plugin>
+                <groupId>com.github.spotbugs</groupId>
+                <artifactId>spotbugs-maven-plugin</artifactId>
+                <version>${version.com.github.spotbugs.maven-plugin}</version>
+                <configuration>
+                    <xmlOutput>true</xmlOutput>
+                    <failOnError>false</failOnError>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>${version.org.jacoco.maven-plugin}</version>
+                <executions>
+                    <execution>
+                        <id>pre-unit-tests</id>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <!-- Ensures that the code coverage report for unit tests is created after unit tests have been run -->
+                    <execution>
+                        <id>post-unit-test</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>${version.org.apache.maven.plugins.maven-javadoc-plugin}</version>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>${version.org.apache.maven.plugins.maven-source-plugin}</version>
+                <executions>
+                    <execution>
+                        <id>attach-sources</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+
+    <profiles>
+        <profile>
+            <id>release</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.sonatype.central</groupId>
+                        <artifactId>central-publishing-maven-plugin</artifactId>
+                        <version>${version.org.sonatype.central.publishing-plugin}</version>
+                        <extensions>true</extensions>
+                        <configuration>
+                            <publishingServerId>sonatype.org</publishingServerId>
+                            <autoPublish>true</autoPublish>
+                            <waitUntil>published</waitUntil>
+                        </configuration>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                        <version>${version.org.apache.maven.plugins.maven-javadoc-plugin}</version>
+                        <configuration>
+                            <javadocExecutable>${java.home}/bin/javadoc</javadocExecutable>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>attach-javadocs</id>
+                                <goals>
+                                    <goal>jar</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                        <version>${version.org.apache.maven.plugins.maven-gpg-plugin}</version>
+                        <executions>
+                            <execution>
+                                <id>sign-artifacts</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>sign</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+
+</project>
