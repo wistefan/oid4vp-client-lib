@@ -71,7 +71,7 @@
         <version.com.nimbusds.nimbus-jose-jwt>10.5</version.com.nimbusds.nimbus-jose-jwt>
         <version.org.bouncycastle>1.81</version.org.bouncycastle>
         <version.io.github.wistefan.dcql-java>0.0.3</version.io.github.wistefan.dcql-java>
-     
+
         <!-- build -->
         <version.org.codehaus.mojo.build-helper-maven-plugin>3.6.1</version.org.codehaus.mojo.build-helper-maven-plugin>
         <version.org.apache.maven.plugins.maven-source-plugin>3.3.1
