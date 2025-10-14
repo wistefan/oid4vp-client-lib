@@ -19,6 +19,9 @@ import java.util.Map;
 
 import static com.nimbusds.jose.JWEAlgorithm.*;
 
+/**
+ * Implementation of the SigningService, using the locally provided key to sign the verifiable presentations.
+ */
 @RequiredArgsConstructor
 public class HolderSigningService implements SigningService {
 

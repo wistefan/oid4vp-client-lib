@@ -5,6 +5,9 @@ import lombok.Getter;
 
 import java.util.Arrays;
 
+/**
+ * Type of the did:key. Contains the multibase-indicator of the key.
+ */
 public enum KeyType {
     ED_25519("z6Mk"),
     P_256("zDn"),

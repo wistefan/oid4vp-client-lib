@@ -10,7 +10,6 @@ import org.bouncycastle.crypto.params.ECPublicKeyParameters;
 import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
 import org.bouncycastle.jce.ECNamedCurveTable;
 import org.bouncycastle.math.ec.ECPoint;
-import reactor.core.publisher.Mono;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -21,6 +20,7 @@ import java.security.PublicKey;
 import java.security.spec.ECGenParameterSpec;
 import java.security.spec.EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * Implementation to support did:key{@see https://w3c-ccg.github.io/did-key-spec} resolution.
@@ -38,7 +38,7 @@ public class DidKeyClientResolver implements ClientResolver {
 
 
     @Override
-    public Mono<PublicKey> getPublicKey(String clientId, SignedJWT jwt) {
+    public CompletableFuture<PublicKey> getPublicKey(String clientId, SignedJWT jwt) {
         if (!isSupportedId(clientId)) {
             throw new ClientResolutionException(String.format("The client %s is not a supported type.", clientId));
         }
@@ -57,8 +57,14 @@ public class DidKeyClientResolver implements ClientResolver {
             // the type indicator needs to be consumed to get the plain key
             readVarint(in);
             // create the key from the plain bytes
-            return Mono.just(createPublicKey(type, in.readAllBytes()));
-        } catch (IOException | GeneralSecurityException e) {
+            return CompletableFuture.supplyAsync(() -> {
+                try {
+                    return createPublicKey(type, in.readAllBytes());
+                } catch (GeneralSecurityException e) {
+                    throw new ClientResolutionException("Failed to create public key", e);
+                }
+            });
+        } catch (IOException e) {
             throw new ClientResolutionException("Failed to decode public key", e);
         }
     }

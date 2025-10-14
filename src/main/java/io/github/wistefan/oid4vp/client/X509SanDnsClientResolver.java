@@ -7,7 +7,6 @@ import org.bouncycastle.asn1.x509.GeneralName;
 import org.bouncycastle.asn1.x509.GeneralNames;
 import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateHolder;
-import reactor.core.publisher.Mono;
 
 import java.io.ByteArrayInputStream;
 import java.io.FileInputStream;
@@ -17,7 +16,11 @@ import java.security.*;
 import java.security.cert.Certificate;
 import java.security.cert.*;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 
+/**
+ * Implementation to support x509_san_dns clients{@see https://openid.net/specs/openid-4-verifiable-presentations-1_0.html#section-5.9.3}
+ */
 public class X509SanDnsClientResolver implements ClientResolver {
 
     private static final String CACERTS_PATH = System.getProperty("javax.net.ssl.trustStore",
@@ -25,11 +28,7 @@ public class X509SanDnsClientResolver implements ClientResolver {
     private static final char[] DEFAULT_TRUSTSTORE_PASSWORD = System.getProperty(
             "javax.net.ssl.trustStorePassword", "changeit").toCharArray();
 
-    private static final String X5C_HEADER = "x5c";
     private static final String X509_SANS_SCHEME = "x509_san_dns";
-    private static final String X509_HASH = "x509_hash";
-    private static final String DECENTRALIZED_IDENTIFIER_SCHEME = "decentralized_identifier";
-
     private final Set<TrustAnchor> trustAnchors;
     private final boolean enableRevocation;
 
@@ -59,7 +58,7 @@ public class X509SanDnsClientResolver implements ClientResolver {
     }
 
     @Override
-    public Mono<PublicKey> getPublicKey(String clientId, SignedJWT jwt) {
+    public CompletableFuture<PublicKey> getPublicKey(String clientId, SignedJWT jwt) {
         List<X509Certificate> x509Certificates = getX509List(jwt.getHeader().getX509CertChain());
         if (!isValid(x509Certificates)) {
             throw new ClientResolutionException("Received an untrusted x5c-header.");
@@ -71,7 +70,7 @@ public class X509SanDnsClientResolver implements ClientResolver {
         if (!containsAsSan(leafCertificate, getDNSFromId(clientId))) {
             throw new ClientResolutionException("The client is not contain in the SAN of the x5c.");
         }
-        return Mono.just(leafCertificate.getPublicKey());
+        return CompletableFuture.supplyAsync(() -> leafCertificate.getPublicKey());
     }
 
     private String getDNSFromId(String clientId) {

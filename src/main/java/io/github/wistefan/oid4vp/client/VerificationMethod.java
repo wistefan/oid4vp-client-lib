@@ -2,11 +2,13 @@ package io.github.wistefan.oid4vp.client;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.nimbusds.jose.jwk.JWK;
 import lombok.Data;
 
 import java.util.Map;
 
+/**
+ * Pojo to represent the Verification Method inside a did-document
+ */
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class VerificationMethod {

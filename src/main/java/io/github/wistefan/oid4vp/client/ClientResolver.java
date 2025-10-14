@@ -1,9 +1,9 @@
 package io.github.wistefan.oid4vp.client;
 
 import com.nimbusds.jwt.SignedJWT;
-import reactor.core.publisher.Mono;
 
 import java.security.PublicKey;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * Interface to resolve clients
@@ -18,5 +18,5 @@ public interface ClientResolver {
     /**
      * Returns the public key of the client. Concrete extraction is implementation specific.
      */
-    Mono<PublicKey> getPublicKey(String clientId, SignedJWT jwt);
+    CompletableFuture<PublicKey> getPublicKey(String clientId, SignedJWT jwt);
 }

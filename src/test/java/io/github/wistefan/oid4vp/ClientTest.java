@@ -10,8 +10,8 @@ import io.github.wistefan.dcql.model.CredentialFormat;
 import io.github.wistefan.dcql.model.TrustedAuthorityType;
 import io.github.wistefan.oid4vp.client.DidWebClientResolver;
 import io.github.wistefan.oid4vp.client.X509SanDnsClientResolver;
-import io.github.wistefan.oid4vp.config.Configuration;
 import io.github.wistefan.oid4vp.config.HolderConfiguration;
+import io.github.wistefan.oid4vp.config.RequestParameters;
 import io.github.wistefan.oid4vp.credentials.CredentialsRepository;
 import io.github.wistefan.oid4vp.credentials.FileSystemCredentialsRepository;
 import io.github.wistefan.oid4vp.mapping.CredentialFormatDeserializer;
@@ -55,7 +55,7 @@ public class ClientTest {
                 .getPublicKey(
                         "did:web:www.linkedin.com",
                         SignedJWT.parse("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiYWRtaW4iOnRydWUsImlhdCI6MTUxNjIzOTAyMn0.KMUFsIDTnFmyG3nMiGM6H9FNFUROf3wh7SmqJp-QV30"))
-                .block();
+                .get();
 
     }
 
@@ -74,11 +74,11 @@ public class ClientTest {
                 JWEAlgorithm.ECDH_ES,
                 privateKey
         );
-        Configuration configuration = new Configuration(URI.create("http://mp-data-service.127.0.0.1.nip.io"),
+
+        RequestParameters requestParameters = new RequestParameters(URI.create("http://contract-management.127.0.0.1.nip.io"),
                 "",
                 "data-service",
-                Set.of("legal"),
-                holderConfiguration);
+                Set.of("legal"));
 
         HttpClient httpClient = createInsecureHttpClient();
         ObjectMapper objectMapper = new ObjectMapper();
@@ -96,10 +96,10 @@ public class ClientTest {
                 new MDocCredentialEvaluator(),
                 new LdpCredentialEvaluator()));
 
-        SigningService signingService = new HolderSigningService(configuration.holder(), objectMapper);
+        SigningService signingService = new HolderSigningService(holderConfiguration, objectMapper);
 
-        OID4VPClient client = new OID4VPClient(httpClient, configuration, objectMapper, List.of(new X509SanDnsClientResolver(trustAnchors, false)), dcqlEvaluator, credentialsRepository, signingService);
-        String jwtString = client.getAccessToken().map(TokenResponse::getAccessToken).block();
+        OID4VPClient client = new OID4VPClient(httpClient, holderConfiguration, objectMapper, List.of(new X509SanDnsClientResolver(trustAnchors, false)), dcqlEvaluator, credentialsRepository, signingService);
+        String jwtString = client.getAccessToken(requestParameters).thenApply(TokenResponse::getAccessToken).get();
 
         SignedJWT signedJWT = SignedJWT.parse(jwtString);
         assertNotNull(signedJWT.getJWTClaimsSet().getClaim("verifiableCredential"));

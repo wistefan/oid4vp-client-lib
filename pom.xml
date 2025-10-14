@@ -66,7 +66,6 @@
         <version.org.projectlombok>1.18.30</version.org.projectlombok>
 
         <version.com.fasterxml.jackson.core>2.20.0</version.com.fasterxml.jackson.core>
-        <version.io.projectreactor.reactor-core>3.7.11</version.io.projectreactor.reactor-core>
         <version.org.slf4j>2.0.17</version.org.slf4j>
         <version.com.nimbusds.nimbus-jose-jwt>10.5</version.com.nimbusds.nimbus-jose-jwt>
         <version.org.bouncycastle>1.81</version.org.bouncycastle>
@@ -112,12 +111,6 @@
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-core</artifactId>
             <version>${version.com.fasterxml.jackson.core}</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>io.projectreactor</groupId>
-            <artifactId>reactor-core</artifactId>
-            <version>${version.io.projectreactor.reactor-core}</version>
             <scope>provided</scope>
         </dependency>
         <dependency>

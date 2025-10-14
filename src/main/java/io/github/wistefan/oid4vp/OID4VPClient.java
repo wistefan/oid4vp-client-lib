@@ -2,7 +2,9 @@ package io.github.wistefan.oid4vp;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nimbusds.jose.*;
+import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.JWSAlgorithm;
+import com.nimbusds.jose.JWSVerifier;
 import com.nimbusds.jose.crypto.ECDSAVerifier;
 import com.nimbusds.jose.crypto.RSASSAVerifier;
 import com.nimbusds.jwt.SignedJWT;
@@ -11,8 +13,8 @@ import io.github.wistefan.dcql.QueryResult;
 import io.github.wistefan.dcql.model.Credential;
 import io.github.wistefan.dcql.model.credential.CredentialBase;
 import io.github.wistefan.oid4vp.client.ClientResolver;
-import io.github.wistefan.oid4vp.config.Configuration;
 import io.github.wistefan.oid4vp.config.HolderConfiguration;
+import io.github.wistefan.oid4vp.config.RequestParameters;
 import io.github.wistefan.oid4vp.credentials.CredentialsRepository;
 import io.github.wistefan.oid4vp.exception.AuthorizationException;
 import io.github.wistefan.oid4vp.exception.AuthorizationRequestException;
@@ -21,7 +23,6 @@ import io.github.wistefan.oid4vp.exception.ClientResolutionException;
 import io.github.wistefan.oid4vp.model.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import reactor.core.publisher.Mono;
 
 import java.io.IOException;
 import java.net.URI;
@@ -38,6 +39,7 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 /**
@@ -62,7 +64,7 @@ public class OID4VPClient {
     /**
      * Configuration to be used for the authorization process
      */
-    private final Configuration configuration;
+    private final HolderConfiguration holderConfiguration;
     private final ObjectMapper objectMapper;
     /**
      * Client Resolvers to be used
@@ -91,48 +93,47 @@ public class OID4VPClient {
      * 6. Post vp_token to verifier
      * 7. Return the TokenResponse
      */
-    public Mono<TokenResponse> getAccessToken() {
-        return getOpenIdConfiguration()
-                .flatMap(this::callAuthorizationEndpoint)
-                .flatMap(this::authorize);
+    public CompletableFuture<TokenResponse> getAccessToken(RequestParameters requestParameters) {
+        return getOpenIdConfiguration(requestParameters)
+                .thenCompose(openIdConfiguration -> callAuthorizationEndpoint(openIdConfiguration, requestParameters))
+                .thenCompose(authorizationInformation -> authorize(authorizationInformation, requestParameters));
     }
 
     /**
      * Retrieve OpenID-Configuration from the configured endpoint
      */
-    private Mono<OpenIdConfiguration> getOpenIdConfiguration() {
-        URI wellKnownAddress = configuration
+    private CompletableFuture<OpenIdConfiguration> getOpenIdConfiguration(RequestParameters requestParameters) {
+        URI wellKnownAddress = requestParameters
                 .host()
-                .resolve(configuration.path())
+                .resolve(requestParameters.path())
                 .resolve(OID_WELL_KNOWN);
         HttpRequest wellKnownRequest = HttpRequest.newBuilder(wellKnownAddress).GET().build();
 
-        return Mono.fromFuture(httpClient.sendAsync(wellKnownRequest, asJson(objectMapper, OpenIdConfiguration.class)))
-                .flatMap(response -> {
+        return httpClient.sendAsync(wellKnownRequest, asJson(objectMapper, OpenIdConfiguration.class))
+                .thenApply(response -> {
                     if (response.statusCode() == 200) {
-                        return Mono.just(response.body()); // success path
-                    } else {
-                        return Mono.error(new BadGatewayException(
-                                String.format("Was not able to retrieve OpenId Configuration from %s - status: %s",
-                                        wellKnownAddress,
-                                        response.statusCode()
-                                )));
+                        return response.body(); // success path
                     }
+                    throw new BadGatewayException(
+                            String.format("Was not able to retrieve OpenId Configuration from %s - status: %s",
+                                    wellKnownAddress,
+                                    response.statusCode()
+                            ));
                 });
     }
 
     /**
      * Call the authorizationEndpoint as advertised in the OpenIdConfiguration and follow it to the AuthorizationRequest.
      */
-    private Mono<AuthorizationInformation> callAuthorizationEndpoint(OpenIdConfiguration openIdConfiguration) {
-        validateOpenIDConfiguration(openIdConfiguration);
+    private CompletableFuture<AuthorizationInformation> callAuthorizationEndpoint(OpenIdConfiguration openIdConfiguration, RequestParameters requestParameters) {
+        validateOpenIDConfiguration(openIdConfiguration, requestParameters);
         String state = CryptoUtils.generateRandomString(16);
         String nonce = CryptoUtils.generateRandomString(16);
 
         AuthorizationQuery authorizationQuery = new AuthorizationQuery(state,
                 nonce,
-                configuration.clientId(),
-                configuration.scope(),
+                requestParameters.clientId(),
+                requestParameters.scope(),
                 CODE_RESPONSE_TYPE);
         try {
             URI authorizationURI = new URI(
@@ -144,19 +145,19 @@ public class OID4VPClient {
             );
 
             HttpRequest authorizationRequest = HttpRequest.newBuilder(authorizationURI).GET().build();
-            return Mono.fromFuture(httpClient.sendAsync(authorizationRequest, HttpResponse.BodyHandlers.ofString()))
-                    .flatMap(response -> {
+            return httpClient.sendAsync(authorizationRequest, HttpResponse.BodyHandlers.ofString())
+                    .thenCompose(response -> {
                         if (response.statusCode() == 302) {
                             return handleAuthorizationRedirectResponse(response);
                         } else {
-                            return Mono.error(new BadGatewayException(
+                            throw new BadGatewayException(
                                     String.format("Was not able to get authorization response from %s - status: %s",
                                             openIdConfiguration.getAuthorizationEndpoint(),
                                             response.statusCode()
-                                    )));
+                                    ));
                         }
                     })
-                    .map(ar -> new AuthorizationInformation(openIdConfiguration, ar));
+                    .thenApply(ar -> new AuthorizationInformation(openIdConfiguration, ar));
 
         } catch (URISyntaxException e) {
             throw new IllegalArgumentException("Was not able to create the authorization uri.", e);
@@ -166,21 +167,21 @@ public class OID4VPClient {
     /**
      * Use the {@link  AuthorizationInformation} to request a token at the verifier.
      */
-    private Mono<TokenResponse> authorize(AuthorizationInformation authorizationInformation) {
+    private CompletableFuture<TokenResponse> authorize(AuthorizationInformation authorizationInformation, RequestParameters requestParameters) {
         String authorizationResponseString = buildAuthorizationResponse(authorizationInformation.authorizationRequest());
 
         String formData = AuthorizationFormResponse.builder()
-                .scopes(configuration.scope())
+                .scopes(requestParameters.scope())
                 .vpToken(authorizationResponseString)
-                .clientId(configuration.clientId())
+                .clientId(requestParameters.clientId())
                 .build().getAsFormBody();
         HttpRequest authorizationResponse = HttpRequest
                 .newBuilder(authorizationInformation.openIdConfiguration().getTokenEndpoint())
                 .header("Content-Type", "application/x-www-form-urlencoded")
                 .POST(HttpRequest.BodyPublishers.ofString(formData))
                 .build();
-        return Mono.fromFuture(httpClient.sendAsync(authorizationResponse, asJson(objectMapper, TokenResponse.class)))
-                .map(response -> {
+        return httpClient.sendAsync(authorizationResponse, asJson(objectMapper, TokenResponse.class))
+                .thenApply(response -> {
                     if (response.statusCode() == 200) {
                         return response.body();
                     }
@@ -191,7 +192,7 @@ public class OID4VPClient {
     /**
      * Handle redirects from the authorizationEndpoint towards OpendId4VP Deeplinks.
      */
-    private Mono<AuthorizationRequest> handleAuthorizationRedirectResponse(HttpResponse<?> httpResponse) {
+    private CompletableFuture<AuthorizationRequest> handleAuthorizationRedirectResponse(HttpResponse<?> httpResponse) {
         if (httpResponse.statusCode() != 302) {
             throw new IllegalArgumentException("The given response was not a redirect.");
         }
@@ -248,7 +249,6 @@ public class OID4VPClient {
      * Create a signed vp_token of the credentials list.
      */
     private String buildVP(List<Credential> credentials) {
-        HolderConfiguration holderConfiguration = configuration.holder();
 
         VerifiablePresentation verifiablePresentation = new VerifiablePresentation();
         verifiablePresentation.setHolder(holderConfiguration.holderId());
@@ -268,7 +268,7 @@ public class OID4VPClient {
      * 2. Verify the JWT
      * 3. Decode it to the AuthorizationRequest
      */
-    private Mono<AuthorizationRequest> handleAuthorizationRequestJWT(OpenId4VPQuery query, String jwt) {
+    private CompletableFuture<AuthorizationRequest> handleAuthorizationRequestJWT(OpenId4VPQuery query, String jwt) {
         try {
             SignedJWT parsedJwt = SignedJWT.parse(jwt);
             return clientResolvers.stream()
@@ -276,7 +276,7 @@ public class OID4VPClient {
                     .findFirst()
                     .orElseThrow(() -> new ClientResolutionException(String.format("The provided clientId %s is not supported.", query.getClientId())))
                     .getPublicKey(query.getClientId(), parsedJwt)
-                    .map(publicKey -> {
+                    .thenApply(publicKey -> {
                         JWSVerifier jwsVerifier = getVerifier(parsedJwt.getHeader().getAlgorithm(), publicKey);
                         try {
                             if (!parsedJwt.verify(jwsVerifier)) {
@@ -299,17 +299,18 @@ public class OID4VPClient {
     /**
      * Get the AuthorizationRequest from the openid4vp query - either from the request_uri or directly encoded.
      */
-    private Mono<AuthorizationRequest> getAuthorizationRequest(OpenId4VPQuery openId4VPQuery) {
+    private CompletableFuture<AuthorizationRequest> getAuthorizationRequest(OpenId4VPQuery openId4VPQuery) {
         if (openId4VPQuery.getRequest() != null && !openId4VPQuery.getRequest().isEmpty()) {
             // get from JWT
             return handleAuthorizationRequestJWT(openId4VPQuery, openId4VPQuery.getRequest());
         } else if (openId4VPQuery.getRequestUri() != null && openId4VPQuery.getRequestUriMethod().equalsIgnoreCase("GET")) {
             // get from uri
             return requestAuthorizationRequest(openId4VPQuery.getRequestUri())
-                    .flatMap(jwt -> handleAuthorizationRequestJWT(openId4VPQuery, jwt));
+                    .thenCompose(jwt -> handleAuthorizationRequestJWT(openId4VPQuery, jwt));
         }
-        return Mono.error(new AuthorizationRequestException("Was not able to resolve the authentication request form the query."));
+        throw new AuthorizationRequestException("Was not able to resolve the authentication request form the query.");
     }
+
 
     /**
      * Return the verifier, based on the algorithm and key provided.
@@ -340,18 +341,18 @@ public class OID4VPClient {
     /**
      * Request the AuthorizationRequest-Object from the given request_uri
      */
-    private Mono<String> requestAuthorizationRequest(URI requestUri) {
+    private CompletableFuture<String> requestAuthorizationRequest(URI requestUri) {
         HttpRequest authorizationRequestUri = HttpRequest.newBuilder(requestUri).GET().build();
-        return Mono.fromFuture(httpClient.sendAsync(authorizationRequestUri, HttpResponse.BodyHandlers.ofString()))
-                .flatMap(response -> {
+        return httpClient.sendAsync(authorizationRequestUri, HttpResponse.BodyHandlers.ofString())
+                .thenApply(response -> {
                     if (response.statusCode() == 200) {
-                        return Mono.just(response.body()); // success path
+                        return response.body();
                     } else {
-                        return Mono.error(new BadGatewayException(
+                        throw new BadGatewayException(
                                 String.format("Was not able to retrieve authorization request from %s - status: %s",
                                         requestUri,
                                         response.statusCode()
-                                )));
+                                ));
                     }
                 });
     }
@@ -372,15 +373,15 @@ public class OID4VPClient {
     /**
      * Validate that the provided OpenId-Endpoint supports OpenId4VP
      */
-    private void validateOpenIDConfiguration(OpenIdConfiguration openIdConfiguration) {
+    private void validateOpenIDConfiguration(OpenIdConfiguration openIdConfiguration, RequestParameters requestParameters) {
         if (openIdConfiguration.getAuthorizationEndpoint() == null) {
             throw new IllegalArgumentException(String.format("The OpenID configuration does not contain an authorization_endpoint: %s", openIdConfiguration));
         }
         if (openIdConfiguration.getTokenEndpoint() == null) {
             throw new IllegalArgumentException(String.format("The OpenID configuration does not contain an token_endpoint: %s", openIdConfiguration));
         }
-        if (!openIdConfiguration.getScopesSupported().containsAll(configuration.scope())) {
-            throw new IllegalArgumentException(String.format("The OpenID configuration does not support all required(%s) scopes: %s", configuration.scope(), openIdConfiguration));
+        if (!openIdConfiguration.getScopesSupported().containsAll(requestParameters.scope())) {
+            throw new IllegalArgumentException(String.format("The OpenID configuration does not support all required(%s) scopes: %s", requestParameters.scope(), openIdConfiguration));
         }
         if (!openIdConfiguration.getGrantTypesSupported().contains(VP_TOKEN_GRANT_TYPE)) {
             throw new IllegalArgumentException(String.format("The OpenID configuration does not support vp_token: %s", openIdConfiguration));

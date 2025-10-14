@@ -80,7 +80,7 @@ class DidKeyClientResolverTest {
     @MethodSource("getTestDids")
     public void testGetPublicKey(String clientId, KeyType keyType, String expectedKeyPath) throws Exception {
         PublicKey expectedPublicKey = loadPublicKey(expectedKeyPath, keyType);
-        PublicKey resolvedKey = clientResolver.getPublicKey(clientId, null).block();
+        PublicKey resolvedKey = clientResolver.getPublicKey(clientId, null).get();
 
         switch (keyType) {
             case P_256, P_384 ->

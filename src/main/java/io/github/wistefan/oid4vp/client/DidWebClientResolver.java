@@ -2,21 +2,23 @@ package io.github.wistefan.oid4vp.client;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.JOSEException;
-import com.nimbusds.jose.jwk.*;
+import com.nimbusds.jose.jwk.ECKey;
+import com.nimbusds.jose.jwk.JWK;
+import com.nimbusds.jose.jwk.OctetKeyPair;
+import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jwt.SignedJWT;
 import io.github.wistefan.oid4vp.exception.BadGatewayException;
 import io.github.wistefan.oid4vp.exception.ClientResolutionException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import reactor.core.publisher.Mono;
 
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.security.PublicKey;
 import java.text.ParseException;
+import java.util.concurrent.CompletableFuture;
 
-import static com.nimbusds.jose.jwk.KeyType.EC;
 import static io.github.wistefan.oid4vp.OID4VPClient.asJson;
 
 /**
@@ -38,7 +40,7 @@ public class DidWebClientResolver implements ClientResolver {
     }
 
     @Override
-    public Mono<PublicKey> getPublicKey(String clientId, SignedJWT jwt) {
+    public CompletableFuture<PublicKey> getPublicKey(String clientId, SignedJWT jwt) {
         if (!isSupportedId(clientId)) {
             throw new ClientResolutionException(String.format("The client %s is not a supported type.", clientId));
         }
@@ -50,19 +52,19 @@ public class DidWebClientResolver implements ClientResolver {
             identifierPart = identifierPart + WELL_KNOWN_PATH;
         }
         HttpRequest wellKnownRequest = HttpRequest.newBuilder(URI.create("https://" + identifierPart)).GET().build();
-        return Mono.fromFuture(httpClient.sendAsync(wellKnownRequest, asJson(objectMapper, DidDocument.class)))
-                .flatMap(response -> {
+        return httpClient.sendAsync(wellKnownRequest, asJson(objectMapper, DidDocument.class))
+                .thenApply(response -> {
                     if (response.statusCode() == 200) {
-                        return Mono.just(response.body()); // success path
+                        return response.body(); // success path
                     } else {
-                        return Mono.error(new BadGatewayException(
+                        throw new BadGatewayException(
                                 String.format("Was not able to retrieve did document for %s - status: %s",
                                         clientId,
                                         response.statusCode()
-                                )));
+                                ));
                     }
                 })
-                .map(document -> getKeyFromDidDocument("#074cfbf193f046bcba5841ac4751e91bvcSigningKey-46682", document));
+                .thenApply(document -> getKeyFromDidDocument("#074cfbf193f046bcba5841ac4751e91bvcSigningKey-46682", document));
     }
 
     private PublicKey getKeyFromDidDocument(String keyId, DidDocument didDocument) {
