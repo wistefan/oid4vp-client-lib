@@ -1,12 +1,14 @@
-package io.github.wistefan.oid4vp;
+package io.github.wistefan.oid4vp.client;
 
-import io.github.wistefan.oid4vp.client.ClientResolver;
-import io.github.wistefan.oid4vp.client.DidKeyClientResolver;
+import io.github.wistefan.oid4vp.ClientTest;
 import io.github.wistefan.oid4vp.exception.ClientResolutionException;
 import io.github.wistefan.oid4vp.model.KeyType;
+import org.bitcoinj.base.Base58;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -15,15 +17,13 @@ import org.junit.jupiter.params.provider.ValueSource;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.security.*;
-import java.security.interfaces.ECPublicKey;
-import java.security.interfaces.EdECPublicKey;
-import java.security.spec.*;
+import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class DidKeyClientResolverTest {
+class DidKeyClientResolverTest extends ClientResolverTest {
 
     private ClientResolver clientResolver;
 
@@ -52,30 +52,35 @@ class DidKeyClientResolverTest {
         );
     }
 
+    @DisplayName("did:key should be correctly identified.")
     @ParameterizedTest
     @MethodSource("getTestDids")
-    public void testIsSupported(String clientId, KeyType keyType, String expectedKeyPath) {
+    public void testIsSupported(String clientId) {
         assertTrue(clientResolver.isSupportedId(clientId), "The client is a did:key.");
     }
 
+    @DisplayName("The key-type should be correctly retrieved from the did:key identifier part.")
     @ParameterizedTest
     @MethodSource("getTestDids")
-    public void testGetKeyType(String clientId, KeyType keyType, String expectedKeyPath) {
+    public void testGetKeyType(String clientId, KeyType keyType) {
         assertEquals(keyType, KeyType.fromKey(clientId.replaceFirst("did:key:", "")), "The correct key-type should have been retrieved.");
     }
 
+    @DisplayName("Only did:key should be supported.")
     @ParameterizedTest
-    @ValueSource(strings = {"did:web:z6MknYNDRL2s1KhzfoPM7PJmH56XmfuAPnMu2AFTEXbouvXE", "did:jwk:eISomething", "x509_san_dns:test.io", "z6MknYNDRL2s1KhzfoPM7PJmH56XmfuAPnMu2AFTEXbouvXE", "key:z6MknYNDRL2s1KhzfoPM7PJmH56XmfuAPnMu2AFTEXbouvXE", "did:key:z6MknyInvalid", "did:key:something-invalid"})
+    @ValueSource(strings = {"did:web:z6MknYNDRL2s1KhzfoPM7PJmH56XmfuAPnMu2AFTEXbouvXE", "did:jwk:eISomething", "x509_san_dns:test.io", "z6MknYNDRL2s1KhzfoPM7PJmH56XmfuAPnMu2AFTEXbouvXE", "key:z6MknYNDRL2s1KhzfoPM7PJmH56XmfuAPnMu2AFTEXbouvXE"})
     public void testIsNotSuppored(String clientId) {
+        assertFalse(clientResolver.isSupportedId(clientId), "Invalid clientIds should not be supported.");
+    }
+
+    @DisplayName("An error should be thrown, if no valid key can be retrieved.")
+    @ParameterizedTest
+    @ValueSource(strings = {"non-did:web:test.io", "did:jwk:eISomething", "x509_san_dns:test.io", "clientId", "did:key:z6MknyInvalid", "did:key:something-invalid"})
+    public void testGetPublicKeyError(String clientId) {
         assertThrows(ClientResolutionException.class, () -> clientResolver.getPublicKey(clientId, null), "Invalid inputs should return a ClientResolutinException.");
     }
 
-    @ParameterizedTest
-    @ValueSource(strings = {"non-did:web:test.io", "did:jwk:eISomething", "x509_san_dns:test.io", "clientId"})
-    public void testGetPublicKeyError(String clientId) {
-
-    }
-
+    @DisplayName("The public key should be retrieved from the did:key.")
     @ParameterizedTest
     @MethodSource("getTestDids")
     public void testGetPublicKey(String clientId, KeyType keyType, String expectedKeyPath) throws Exception {
@@ -83,11 +88,9 @@ class DidKeyClientResolverTest {
         PublicKey resolvedKey = clientResolver.getPublicKey(clientId, null).get();
 
         switch (keyType) {
-            case P_256, P_384 ->
-                    assertTrue(ecKeysEqual(expectedPublicKey, resolvedKey), "The public key should be correctly resolved.");
-            case ED_25519 -> {
-                assertEdEcEquals(expectedPublicKey, resolvedKey);
-            }
+            case P_256, P_384 -> assertEcKeysEqual(expectedPublicKey, resolvedKey);
+            case ED_25519 -> assertEdEcEquals(expectedPublicKey, resolvedKey);
+
         }
     }
 
@@ -120,44 +123,6 @@ class DidKeyClientResolverTest {
             case P_256 -> KeyFactory.getInstance("EC");
             case P_384 -> KeyFactory.getInstance("EC");
         };
-    }
-
-    private static void assertEdEcEquals(PublicKey pk1, PublicKey pk2) {
-        if (pk1 instanceof EdECPublicKey k1 && pk2 instanceof EdECPublicKey k2) {
-            NamedParameterSpec spec1 = k1.getParams();
-            NamedParameterSpec spec2 = k2.getParams();
-            assertEquals(spec1.getName(), spec2.getName());
-            EdECPoint point1 = k1.getPoint();
-            EdECPoint point2 = k2.getPoint();
-            assertEquals(point1.isXOdd(), point2.isXOdd(), "XOdd needs to be equal");
-            assertEquals(point1.getY(), point2.getY(), "Both points should have the same y param.");
-        } else {
-            fail("Did not receive EdECPublicKeys");
-        }
-    }
-
-    public static boolean ecKeysEqual(PublicKey k1, PublicKey k2) {
-        if (!(k1 instanceof ECPublicKey) || !(k2 instanceof ECPublicKey)) return false;
-
-        ECPublicKey ec1 = (ECPublicKey) k1;
-        ECPublicKey ec2 = (ECPublicKey) k2;
-
-        ECPoint p1 = ec1.getW();
-        ECPoint p2 = ec2.getW();
-
-        ECParameterSpec spec1 = ec1.getParams();
-        ECParameterSpec spec2 = ec2.getParams();
-
-        // Compare X and Y coordinates
-        boolean pointEquals = p1.getAffineX().equals(p2.getAffineX()) &&
-                p1.getAffineY().equals(p2.getAffineY());
-
-        // Compare curve parameters
-        boolean curveEquals = spec1.getCurve().getA().equals(spec2.getCurve().getA()) &&
-                spec1.getCurve().getB().equals(spec2.getCurve().getB()) &&
-                spec1.getCurve().getField().getFieldSize() == spec2.getCurve().getField().getFieldSize();
-
-        return pointEquals && curveEquals;
     }
 
 }

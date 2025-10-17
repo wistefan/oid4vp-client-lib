@@ -2,6 +2,7 @@ package io.github.wistefan.oid4vp.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
+import lombok.experimental.Accessors;
 
 import java.net.URI;
 import java.util.Set;
@@ -9,6 +10,7 @@ import java.util.Set;
 /**
  * OpenId Configuration data, as returned from the well-known endpoint
  */
+@Accessors(chain = true)
 @Data
 public class OpenIdConfiguration {
 

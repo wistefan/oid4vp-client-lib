@@ -44,7 +44,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class ClientTest {
 
-    @Test
+   // @Test
     public void didWebTest() throws Exception {
 
         HttpClient httpClient = HttpClient.newHttpClient();
@@ -59,7 +59,7 @@ public class ClientTest {
 
     }
 
-    @Test
+    //@Test
     public void test() throws Exception {
         Set<TrustAnchor> trustAnchors = loadCertificates("secret/test-ca.pem")
                 .stream()

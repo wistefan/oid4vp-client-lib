@@ -3,6 +3,7 @@ package io.github.wistefan.oid4vp.client;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
+import lombok.experimental.Accessors;
 
 import java.util.Map;
 
@@ -10,6 +11,7 @@ import java.util.Map;
  * Pojo to represent the Verification Method inside a did-document
  */
 @Data
+@Accessors(chain = true)
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class VerificationMethod {
 

@@ -29,6 +29,8 @@ public class X509SanDnsClientResolver implements ClientResolver {
             "javax.net.ssl.trustStorePassword", "changeit").toCharArray();
 
     private static final String X509_SANS_SCHEME = "x509_san_dns";
+    private static final String X509_CERT_FACTORY_TYPE = "X.509";
+
     private final Set<TrustAnchor> trustAnchors;
     private final boolean enableRevocation;
 
@@ -70,7 +72,7 @@ public class X509SanDnsClientResolver implements ClientResolver {
         if (!containsAsSan(leafCertificate, getDNSFromId(clientId))) {
             throw new ClientResolutionException("The client is not contain in the SAN of the x5c.");
         }
-        return CompletableFuture.supplyAsync(() -> leafCertificate.getPublicKey());
+        return CompletableFuture.supplyAsync(leafCertificate::getPublicKey);
     }
 
     private String getDNSFromId(String clientId) {
@@ -100,7 +102,7 @@ public class X509SanDnsClientResolver implements ClientResolver {
         try {
             PKIXParameters params = new PKIXParameters(trustAnchors);
             params.setRevocationEnabled(enableRevocation);
-            CertificateFactory cf = CertificateFactory.getInstance("X.509");
+            CertificateFactory cf = CertificateFactory.getInstance(X509_CERT_FACTORY_TYPE);
             CertPath certPath = cf.generateCertPath(certificateChain);
 
             CertPathValidator certPathValidator = CertPathValidator.getInstance("PKIX");
@@ -114,7 +116,7 @@ public class X509SanDnsClientResolver implements ClientResolver {
 
     private List<X509Certificate> getX509List(List<Base64> x5cList) {
         try {
-            CertificateFactory certificateFactory = CertificateFactory.getInstance("X.509");
+            CertificateFactory certificateFactory = CertificateFactory.getInstance(X509_CERT_FACTORY_TYPE);
 
             return x5cList.stream()
                     .map(Base64::decode)

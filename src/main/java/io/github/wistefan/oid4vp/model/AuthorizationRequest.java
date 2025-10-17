@@ -4,10 +4,12 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.wistefan.dcql.model.DcqlQuery;
 import lombok.Data;
+import lombok.experimental.Accessors;
 
 /**
  * Object containing the authorization request
  */
+@Accessors(chain = true)
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class AuthorizationRequest {

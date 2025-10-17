@@ -11,15 +11,27 @@ import java.util.Optional;
 /**
  * Helper class to for certain crypto functions
  */
-public abstract class CryptoUtils {
+public class CryptoUtils {
+
+    private static CryptoUtils INSTANCE;
 
     private static final SecureRandom secureRandom = new SecureRandom();
     private static final Base64.Encoder base64Encoder = Base64.getUrlEncoder().withoutPadding();
 
+    private CryptoUtils() {
+    }
+
+    public static CryptoUtils getInstance() {
+        if (INSTANCE == null) {
+            INSTANCE = new CryptoUtils();
+        }
+        return INSTANCE;
+    }
+
     /**
      * Generates a random string of the given byte-length
      */
-    public static String generateRandomString(int byteLength) {
+    public String generateRandomString(int byteLength) {
         byte[] randomBytes = new byte[byteLength];
         secureRandom.nextBytes(randomBytes);
         return base64Encoder.encodeToString(randomBytes);

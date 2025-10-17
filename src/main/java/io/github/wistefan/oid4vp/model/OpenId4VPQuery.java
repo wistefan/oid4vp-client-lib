@@ -7,17 +7,16 @@ import java.net.URI;
 import java.util.Arrays;
 import java.util.List;
 
+import static io.github.wistefan.oid4vp.HttpConstants.QUERY_DELIMITER;
+import static io.github.wistefan.oid4vp.HttpConstants.QUERY_PARAM_DELIMITER;
+import static io.github.wistefan.oid4vp.OIDConstants.*;
+
 /**
  * Data container holding information from an openid4vp authorization request
  */
 @Slf4j
 @Data
 public class OpenId4VPQuery {
-
-    private static final String CLIENT_ID_KEY = "client_id";
-    private static final String REQUEST_KEY = "request";
-    private static final String REQUEST_URI_KEY = "request_uri";
-    private static final String REQUEST_URI_METHOD_KEY = "request_uri_method";
 
     private String clientId;
     private URI requestUri;
@@ -30,10 +29,10 @@ public class OpenId4VPQuery {
     public static OpenId4VPQuery fromQueryString(String queryString) {
         OpenId4VPQuery openId4VPQuery = new OpenId4VPQuery();
 
-        List<String> queryParts = Arrays.asList(queryString.split("&"));
+        List<String> queryParts = Arrays.asList(queryString.split(QUERY_DELIMITER));
         queryParts.forEach(
                 queryPart -> {
-                    String[] queryParam = queryPart.split("=");
+                    String[] queryParam = queryPart.split(QUERY_PARAM_DELIMITER);
                     if (queryParam.length != 2) {
                         throw new IllegalArgumentException(String.format("Query contains invalid parameters. Parameter was: %s", queryPart));
                     }

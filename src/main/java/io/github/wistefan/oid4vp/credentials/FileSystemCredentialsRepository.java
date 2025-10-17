@@ -27,6 +27,8 @@ public class FileSystemCredentialsRepository implements CredentialsRepository {
      */
     private static final String SD_ALGORITHM_KEY = "_sd_alg";
 
+    private static final String DISCLOSURE_DELIMITER = "~";
+
     /**
      * Folder containing the credentials.
      */
@@ -51,22 +53,26 @@ public class FileSystemCredentialsRepository implements CredentialsRepository {
 
             CredentialFileFormat credentialFileFormat = CredentialFileFormat.fromFileName(filePath.toString());
             return switch (credentialFileFormat) {
-                case JWT -> readJwtCredential(filePath.toString(), credentialString);
+                case JWT -> readJwtCredential(credentialString);
                 case SD_JWT -> readSdJwtCredential(filePath.toString(), credentialString);
+                // only JWT and SD_JWT are supported by the current repo implementation
                 case LDP -> null;
                 case MDOC -> null;
             };
-
         } catch (IOException e) {
             throw new CredentialsAccessException(String.format("Was not able to read the credential from %s.", filePath), e);
         }
     }
 
-    private Credential readJwtCredential(String path, String jwt) {
+    private Credential readJwtCredential(String jwt) {
         try {
             SignedJWT signedJWT = SignedJWT.parse(jwt);
 
-            JwtCredential jwtCredential = new JwtCredential(jwt, signedJWT.getHeader().toJSONObject(), signedJWT.getJWTClaimsSet().toJSONObject(), signedJWT.getSignature().decodeToString());
+            JwtCredential jwtCredential = new JwtCredential(
+                    jwt,
+                    signedJWT.getHeader().toJSONObject(),
+                    signedJWT.getJWTClaimsSet().toJSONObject(),
+                    signedJWT.getSignature().decodeToString());
             return new Credential(CredentialFormat.JWT_VC_JSON, jwtCredential);
         } catch (ParseException e) {
             throw new CredentialsAccessException("Not a valid jwt-credential.", e);
@@ -75,7 +81,7 @@ public class FileSystemCredentialsRepository implements CredentialsRepository {
 
     private Credential readSdJwtCredential(String path, String sdJwt) {
         try {
-            String[] sdParts = sdJwt.split("~");
+            String[] sdParts = sdJwt.split(DISCLOSURE_DELIMITER);
             // first part is the plain jwt
             SignedJWT signedJWT = SignedJWT.parse(sdParts[0]);
             Object algorithmClaim = signedJWT.getJWTClaimsSet().getClaim(SD_ALGORITHM_KEY);

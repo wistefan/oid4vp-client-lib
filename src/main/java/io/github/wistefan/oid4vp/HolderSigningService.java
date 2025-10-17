@@ -9,11 +9,9 @@ import com.nimbusds.jwt.SignedJWT;
 import io.github.wistefan.oid4vp.config.HolderConfiguration;
 import io.github.wistefan.oid4vp.exception.AuthorizationException;
 import io.github.wistefan.oid4vp.model.VerifiablePresentation;
-import lombok.RequiredArgsConstructor;
 
 import java.security.PrivateKey;
 import java.security.interfaces.ECPrivateKey;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -22,23 +20,23 @@ import static com.nimbusds.jose.JWEAlgorithm.*;
 /**
  * Implementation of the SigningService, using the locally provided key to sign the verifiable presentations.
  */
-@RequiredArgsConstructor
 public class HolderSigningService implements SigningService {
 
 
     private static final List<JWEAlgorithm> SUPPORTED_RSA_ALGORITHMS = List.of(RSA_OAEP_256, RSA_OAEP_384, RSA_OAEP_512);
     private static final List<JWEAlgorithm> SUPPORTED_ECDH_ES_ALGORITHMS = List.of(ECDH_ES, ECDH_ES_A128KW, ECDH_ES_A192KW, ECDH_ES_A256KW);
-    private static final List<JWEAlgorithm> SUPPORTED_ALGORITHMS = new ArrayList<>();
-
-    {
-        SUPPORTED_ALGORITHMS.addAll(SUPPORTED_RSA_ALGORITHMS);
-        SUPPORTED_ALGORITHMS.addAll(SUPPORTED_ECDH_ES_ALGORITHMS);
-    }
 
     private static final String VP_CLAIM_KEY = "vp";
 
     private final HolderConfiguration holderConfiguration;
     private final ObjectMapper objectMapper;
+    private final JWSSigner signer;
+
+    public HolderSigningService(HolderConfiguration holderConfiguration, ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
+        this.holderConfiguration = holderConfiguration;
+        this.signer = getSigner(holderConfiguration.signatureAlgorithm(), holderConfiguration.privateKey());
+    }
 
     @Override
     public String signPresentation(VerifiablePresentation verifiablePresentation) {
@@ -54,7 +52,6 @@ public class HolderSigningService implements SigningService {
                 .keyID(holderConfiguration.kid())
                 .build();
         SignedJWT signedJWT = new SignedJWT(header, claimsSet);
-        JWSSigner signer = getSigner(holderConfiguration.signatureAlgorithm(), holderConfiguration.privateKey());
         try {
             signedJWT.sign(signer);
         } catch (JOSEException e) {
@@ -65,7 +62,11 @@ public class HolderSigningService implements SigningService {
 
     private JWSSigner getSigner(JWEAlgorithm jweAlgorithm, PrivateKey privateKey) {
         if (SUPPORTED_RSA_ALGORITHMS.contains(jweAlgorithm)) {
-            return new RSASSASigner(privateKey);
+            try {
+                return new RSASSASigner(privateKey);
+            } catch (IllegalArgumentException e) {
+                throw new AuthorizationException("Was not able to generate the signer from the configured algorithm and key.", e);
+            }
         }
         if (SUPPORTED_ECDH_ES_ALGORITHMS.contains(jweAlgorithm) && privateKey instanceof ECPrivateKey ecPrivateKey) {
             try {

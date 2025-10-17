@@ -2,6 +2,8 @@ package io.github.wistefan.oid4vp.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.experimental.Accessors;
 
 import java.net.URI;
 import java.util.List;
@@ -9,6 +11,8 @@ import java.util.List;
 /**
  * Representation of W3C Verifiable Presentation
  */
+@Accessors(chain = true)
+@EqualsAndHashCode
 @Data
 public class VerifiablePresentation {
 

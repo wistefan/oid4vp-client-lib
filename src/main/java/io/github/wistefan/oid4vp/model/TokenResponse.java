@@ -2,10 +2,12 @@ package io.github.wistefan.oid4vp.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
+import lombok.experimental.Accessors;
 
 /**
  * OAuth 2 conformant token response
  */
+@Accessors(chain = true)
 @Data
 public class TokenResponse {
     @JsonProperty("token_type")
