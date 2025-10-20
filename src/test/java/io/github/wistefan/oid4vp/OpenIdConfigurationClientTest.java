@@ -5,10 +5,8 @@ import io.github.wistefan.oid4vp.config.RequestParameters;
 import io.github.wistefan.oid4vp.exception.BadGatewayException;
 import io.github.wistefan.oid4vp.exception.Oid4VPException;
 import io.github.wistefan.oid4vp.model.OpenIdConfiguration;
-import org.checkerframework.checker.units.qual.A;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -21,18 +19,18 @@ import java.net.http.HttpClient;
 import java.net.http.HttpResponse;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
-import java.util.concurrent.ExecutionException;
-import java.util.function.Function;
 import java.util.stream.Stream;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 public class OpenIdConfigurationClientTest {
+
+    private static final TestHelpers TEST_HELPERS = new TestHelpers();
 
     @Mock
     private HttpClient httpClient;
@@ -78,15 +76,7 @@ public class OpenIdConfigurationClientTest {
                 any(),
                 any(HttpResponse.BodyHandler.class)
         )).thenReturn(CompletableFuture.completedFuture(mockResponse));
-        assertThrows(expectedException, () -> executeWithUnwrapping(requestParameters, rp -> openIdConfigurationClient.getOpenIdConfiguration(rp)), message);
-    }
-
-    private <P, T> T executeWithUnwrapping(P parameter, Function<P, CompletableFuture<T>> functionToExecute) throws Throwable {
-        try {
-            return functionToExecute.apply(parameter).get();
-        } catch (CompletionException | ExecutionException e) {
-            throw e.getCause();
-        }
+        assertThrows(expectedException, () -> TEST_HELPERS.executeWithUnwrapping(requestParameters, rp -> openIdConfigurationClient.getOpenIdConfiguration(rp)), message);
     }
 
     private static RequestParameters getValidRequestParameters() {

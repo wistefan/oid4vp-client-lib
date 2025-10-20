@@ -33,9 +33,6 @@ import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
-import java.util.concurrent.ExecutionException;
-import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static io.github.wistefan.oid4vp.OIDConstants.*;
@@ -47,6 +44,7 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 public class OID4VPClientTest {
 
+    private static final TestHelpers TEST_HELPERS = new TestHelpers();
 
     @Mock
     private HolderConfiguration holderConfiguration;
@@ -113,7 +111,7 @@ public class OID4VPClientTest {
         mockAuthorizationRequest(requestParameters, verifierHost, authorizationPath, authorizationRequest);
         mockCredentialRepository(credentialsRepo);
 
-        assertThrows(expectedException, () -> executeWithUnwrapping(requestParameters, rp -> oid4VPClient.getAccessToken(rp)), message);
+        assertThrows(expectedException, () -> TEST_HELPERS.executeWithUnwrapping(requestParameters, rp -> oid4VPClient.getAccessToken(rp)), message);
         // assert that nothing fails before out mocked error.
         verify(credentialsRepository, times(1)).getCredentials();
     }
@@ -141,7 +139,7 @@ public class OID4VPClientTest {
         if (toBeThrown != null) {
             when(authorizationClient.sendAuthorizationResponse(any(), any())).thenThrow(toBeThrown);
         }
-        assertThrows(expectedException, () -> executeWithUnwrapping(requestParameters, rp -> oid4VPClient.getAccessToken(rp)), message);
+        assertThrows(expectedException, () -> TEST_HELPERS.executeWithUnwrapping(requestParameters, rp -> oid4VPClient.getAccessToken(rp)), message);
     }
 
 
@@ -171,7 +169,7 @@ public class OID4VPClientTest {
 
         when(signingService.signPresentation(any())).thenThrow(toBeThrown);
 
-        assertThrows(expectedException, () -> executeWithUnwrapping(requestParameters, rp -> oid4VPClient.getAccessToken(rp)), message);
+        assertThrows(expectedException, () -> TEST_HELPERS.executeWithUnwrapping(requestParameters, rp -> oid4VPClient.getAccessToken(rp)), message);
         // assert that nothing fails before out mocked error.
         verify(signingService, times(1)).signPresentation(any());
     }
@@ -202,7 +200,7 @@ public class OID4VPClientTest {
 
         when(credentialsRepository.getCredentials()).thenThrow(toBeThrown);
 
-        assertThrows(expectedException, () -> executeWithUnwrapping(requestParameters, rp -> oid4VPClient.getAccessToken(rp)), message);
+        assertThrows(expectedException, () -> TEST_HELPERS.executeWithUnwrapping(requestParameters, rp -> oid4VPClient.getAccessToken(rp)), message);
         // assert that nothing fails before out mocked error.
         verify(credentialsRepository, times(1)).getCredentials();
     }
@@ -224,7 +222,7 @@ public class OID4VPClientTest {
         failedFuture.completeExceptionally(toBeThrown);
         when(authorizationClient.sendAuthorizationRequest(any())).thenReturn(failedFuture);
 
-        assertThrows(expectedException, () -> executeWithUnwrapping(requestParameters, rp -> oid4VPClient.getAccessToken(rp)), message);
+        assertThrows(expectedException, () -> TEST_HELPERS.executeWithUnwrapping(requestParameters, rp -> oid4VPClient.getAccessToken(rp)), message);
         // assert that nothing fails before out mocked error.
         verify(authorizationClient, times(1)).sendAuthorizationRequest(any());
     }
@@ -239,7 +237,7 @@ public class OID4VPClientTest {
         failedFuture.completeExceptionally(toBeThrown);
         when(openIdConfigurationClient.getOpenIdConfiguration(any()))
                 .thenReturn(failedFuture);
-        assertThrows(expectedException, () -> executeWithUnwrapping(requestParameters, rp -> oid4VPClient.getAccessToken(rp)), message);
+        assertThrows(expectedException, () -> TEST_HELPERS.executeWithUnwrapping(requestParameters, rp -> oid4VPClient.getAccessToken(rp)), message);
         // assert that nothing fails before out mocked error.
         verify(openIdConfigurationClient, times(1)).getOpenIdConfiguration(any());
     }
@@ -340,14 +338,6 @@ public class OID4VPClientTest {
                         Arguments.of(new Throwable("Something wild."), Oid4VPException.class, "Unspecific exceptions should be thrown as Oid4VPExceptions."),
                         Arguments.of(new Exception("Something less wild."), Oid4VPException.class, "Unspecific exceptions should be thrown as Oid4VPExceptions.")),
                 provideRuntimeExceptions());
-    }
-
-    private <P, T> T executeWithUnwrapping(P parameter, Function<P, CompletableFuture<T>> functionToExecute) throws Throwable {
-        try {
-            return functionToExecute.apply(parameter).get();
-        } catch (CompletionException | ExecutionException e) {
-            throw e.getCause();
-        }
     }
 
     private void mockAuthorizationResponse(RequestParameters requestParameters, String mockToken, TokenResponse tokenResponse, Optional<DcqlQuery> requestedQuery) throws Exception {

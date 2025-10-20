@@ -7,6 +7,7 @@ import com.nimbusds.jose.JWSHeader;
 import com.nimbusds.jose.jwk.*;
 import com.nimbusds.jose.util.Base64URL;
 import com.nimbusds.jwt.SignedJWT;
+import io.github.wistefan.oid4vp.TestHelpers;
 import io.github.wistefan.oid4vp.exception.BadGatewayException;
 import io.github.wistefan.oid4vp.exception.ClientResolutionException;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
@@ -46,6 +47,8 @@ import static org.mockito.Mockito.mock;
 
 @ExtendWith(MockitoExtension.class)
 public class DidWebClientResolverTest extends ClientResolverTest {
+
+    private static final TestHelpers TEST_HELPERS = new TestHelpers();
 
     @Mock
     private HttpClient httpClient;
@@ -99,15 +102,7 @@ public class DidWebClientResolverTest extends ClientResolverTest {
     @MethodSource("provideClientErrors")
     public void testGetPublicKeyError(String clientId, String keyId, String wellKnown, int statusCode, DidDocument didDocument, Class<? extends RuntimeException> expectedException, String message) {
         SignedJWT signedJWT = prepareMock(keyId, wellKnown, statusCode, didDocument);
-        assertThrows(expectedException, () -> executeWithUnwrapping(clientId, signedJWT, (a, b) -> didWebClientResolver.getPublicKey(a, b)), message);
-    }
-
-    private <P1, P2, T> T executeWithUnwrapping(P1 parameterOne, P2 parameterTwo, BiFunction<P1, P2, CompletableFuture<T>> functionToExecute) throws Throwable {
-        try {
-            return functionToExecute.apply(parameterOne, parameterTwo).get();
-        } catch (CompletionException | ExecutionException e) {
-            throw e.getCause();
-        }
+        assertThrows(expectedException, () -> TEST_HELPERS.executeWithUnwrapping(clientId, signedJWT, (a, b) -> didWebClientResolver.getPublicKey(a, b)), message);
     }
 
     private static Map<String, Object> remove(Map<String, Object> theMap, String key) {

@@ -82,16 +82,14 @@ public class AuthorizationClient {
      * Handle redirects from the authorizationEndpoint towards OpendId4VP Deeplinks.
      */
     private CompletableFuture<AuthorizationRequest> handleAuthorizationRedirectResponse(HttpResponse<?> httpResponse) {
-        if (httpResponse.statusCode() != STATUS_CODE_REDIRECT) {
-            throw new IllegalArgumentException("The given response was not a redirect.");
-        }
+
         URI location = httpResponse.headers()
                 .firstValue(LOCATION_HEADER)
                 .map(URI::create)
-                .orElseThrow(() -> new IllegalArgumentException("The redirect response does not contain a location header."));
+                .orElseThrow(() -> new BadGatewayException("The redirect response does not contain a location header."));
 
         if (!location.getScheme().equals(OPENID_4_VP_SCHEME)) {
-            throw new IllegalArgumentException(String.format("The location is not redirecting to an openid4vp uri. Was: %s", location));
+            throw new BadGatewayException(String.format("The location is not redirecting to an openid4vp uri. Was: %s", location));
         }
         OpenId4VPQuery openId4VPQuery = OpenId4VPQuery.fromQueryString(location.getQuery());
         return getAuthorizationRequest(openId4VPQuery);
@@ -159,6 +157,12 @@ public class AuthorizationClient {
                         } catch (JOSEException e) {
                             throw new ClientResolutionException("Failed to validate authorization request.", e);
                         }
+                    })
+                    .exceptionally(ex -> {
+                        if (ex instanceof BadGatewayException | ex instanceof ClientResolutionException) {
+                            throw (RuntimeException) ex;
+                        }
+                        throw new ClientResolutionException("Unexpected error during client resolution.", ex);
                     });
         } catch (ParseException e) {
             throw new ClientResolutionException("Was not able to parse the jwt.", e);
@@ -172,20 +176,20 @@ public class AuthorizationClient {
         // Select verifier based on key type
         if (jwsAlgorithm.getName().startsWith(ALGORITHM_INDICATOR_RS)) { // RSA
             if (!(publicKey instanceof RSAPublicKey)) {
-                throw new IllegalArgumentException("Expected an RSA public key for algorithm " + jwsAlgorithm);
+                throw new BadGatewayException("Expected an RSA public key for algorithm " + jwsAlgorithm);
             }
             return new RSASSAVerifier((RSAPublicKey) publicKey);
         } else if (jwsAlgorithm.getName().startsWith(ALGORITHM_INDICATOR_ES)) { // ECDSA
             if (!(publicKey instanceof ECPublicKey)) {
-                throw new IllegalArgumentException("Expected an EC public key for algorithm " + jwsAlgorithm);
+                throw new BadGatewayException("Expected an EC public key for algorithm " + jwsAlgorithm);
             }
             try {
                 return new ECDSAVerifier((ECPublicKey) publicKey);
             } catch (JOSEException e) {
-                throw new IllegalArgumentException("Was not able to create an ECDSA verifier with the given key.", e);
+                throw new BadGatewayException("Was not able to create an ECDSA verifier with the given key.", e);
             }
         } else {
-            throw new IllegalArgumentException("Unsupported algorithm: " + jwsAlgorithm);
+            throw new BadGatewayException("Unsupported algorithm: " + jwsAlgorithm);
         }
     }
 }
