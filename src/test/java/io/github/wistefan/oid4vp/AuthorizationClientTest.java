@@ -8,7 +8,6 @@ import com.nimbusds.jose.JWSHeader;
 import com.nimbusds.jose.JWSSigner;
 import com.nimbusds.jose.crypto.ECDSASigner;
 import com.nimbusds.jose.crypto.RSASSASigner;
-import com.nimbusds.jose.jwk.ECKey;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import io.github.wistefan.oid4vp.client.ClientResolver;
@@ -36,7 +35,6 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpHeaders;
 import java.net.http.HttpResponse;
-import java.security.Key;
 import java.security.KeyPair;
 import java.security.PublicKey;
 import java.security.Security;
@@ -49,8 +47,10 @@ import java.util.stream.Stream;
 
 import static com.nimbusds.jose.JWSAlgorithm.ES256;
 import static com.nimbusds.jose.JWSAlgorithm.RS256;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)

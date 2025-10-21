@@ -1,14 +1,12 @@
 package io.github.wistefan.oid4vp.client;
 
-import io.github.wistefan.oid4vp.ClientTest;
+import io.github.wistefan.oid4vp.OID4VPClientIT;
 import io.github.wistefan.oid4vp.exception.ClientResolutionException;
 import io.github.wistefan.oid4vp.model.KeyType;
-import org.bitcoinj.base.Base58;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -48,7 +46,6 @@ class DidKeyClientResolverTest extends ClientResolverTest {
                 Arguments.of("did:key:z82LksDNeAsaYGymiJEAsCgR6wj8JEcvJkdLu24DwDnLGkpBmUL2GQeGnDA1FsVbRrRpMK2", KeyType.P_384, "test-keys/z82LksDNeAsaYGymiJEAsCgR6wj8JEcvJkdLu24DwDnLGkpBmUL2GQeGnDA1FsVbRrRpMK2.pem"),
                 Arguments.of("did:key:z82Lm4a86fagXYdhES9aLpwpuw8jiVPWks5eQLJt8NhARHDUsNFgCjgs997QPqbdKGLzZ4F", KeyType.P_384, "test-keys/z82Lm4a86fagXYdhES9aLpwpuw8jiVPWks5eQLJt8NhARHDUsNFgCjgs997QPqbdKGLzZ4F.pem"),
                 Arguments.of("did:key:z82LkukkxhxLUSD5WpmWtdNvnwHEJ4HQySqAediKworJwtcyCStFxRPobg8PGrxfkdKXBMs", KeyType.P_384, "test-keys/z82LkukkxhxLUSD5WpmWtdNvnwHEJ4HQySqAediKworJwtcyCStFxRPobg8PGrxfkdKXBMs.pem")
-
         );
     }
 
@@ -96,7 +93,7 @@ class DidKeyClientResolverTest extends ClientResolverTest {
 
 
     private static PublicKey loadPublicKey(String pemFile, KeyType keyType) throws Exception {
-        try (InputStream is = ClientTest.class.getClassLoader().getResourceAsStream(pemFile)) {
+        try (InputStream is = OID4VPClientIT.class.getClassLoader().getResourceAsStream(pemFile)) {
             if (is == null) {
                 throw new IllegalArgumentException("Resource not found: " + pemFile);
             }

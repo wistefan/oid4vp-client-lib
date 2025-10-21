@@ -1,0 +1,127 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: trust-anchor-mysql
+spec:
+  replicas: 1
+  podManagementPolicy: ""
+  selector:
+    matchLabels:
+      app/name: mysql
+  serviceName: trust-anchor-mysql
+  updateStrategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app/name: mysql
+    spec:
+      serviceAccountName: default
+      containers:
+        - name: mysql
+          image: docker.io/bitnamilegacy/mysql:8.0.31-debian-11-r10
+          imagePullPolicy: "IfNotPresent"
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              value: "password"
+            - name: MYSQL_DATABASE
+              value: "tirdb"
+          ports:
+            - name: mysql
+              containerPort: 3306
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: trust-anchor-mysql
+  labels:
+    app/name: mysql
+spec:
+  type: ClusterIP
+  ports:
+    - name: mysql
+      port: 3306
+      protocol: TCP
+      targetPort: mysql
+  selector:
+    app/name: mysql
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tir
+spec:
+  replicas: 1
+  revisionHistoryLimit: 3
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app/name: tir
+  template:
+    metadata:
+      labels:
+        app/name: tir
+    spec:
+      serviceAccountName: default
+      containers:
+        - name: trusted-issuers-list
+          imagePullPolicy: IfNotPresent
+          image: "quay.io/fiware/trusted-issuers-list:0.3.4"
+          ports:
+            - name: http
+              containerPort: 8090
+              protocol: TCP
+            - name: http-health
+              containerPort: 9090
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http-health
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http-health
+            initialDelaySeconds: 31
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 30
+          env:
+            - name: ENDPOINTS_ALL_PORT
+              value: "9090"
+            - name: MICRONAUT_SERVER_PORT
+              value: "8090"
+            - name: DATASOURCES_DEFAULT_URL
+              value: "jdbc:mysql://trust-anchor-mysql:3306/tirdb"
+            - name: DATASOURCES_DEFAULT_DRIVER_CLASS_NAME
+              value: "com.mysql.cj.jdbc.Driver"
+            - name: DATASOURCES_DEFAULT_USERNAME
+              value: "root"
+            - name: DATASOURCES_DEFAULT_DIALECT
+              value: "MYSQL"
+            - name: DATASOURCES_DEFAULT_PASSWORD
+              value: "password"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tir
+  labels:
+    app/name: tir
+spec:
+  type: LoadBalancer
+  ports:
+    - name: http
+      port: 8090
+      protocol: TCP
+      targetPort: http
+  selector:
+    app/name: tir

@@ -1,8 +1,10 @@
 package io.github.wistefan.oid4vp.model;
 
+import io.github.wistefan.oid4vp.exception.AuthorizationRequestException;
+
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.util.Set;
+import java.util.*;
 
 import static io.github.wistefan.oid4vp.HttpConstants.*;
 import static io.github.wistefan.oid4vp.OIDConstants.*;
@@ -18,12 +20,19 @@ public record AuthorizationQuery(String state, String nonce, String clientId, Se
      */
     @Override
     public String toString() {
+        StringJoiner stringJoiner = new StringJoiner(QUERY_DELIMITER);
 
-        return createQuery(STATE_KEY, state) + QUERY_DELIMITER +
-                createQuery(NONCE_KEY, nonce) + QUERY_DELIMITER +
-                createQuery(CLIENT_ID_KEY, clientId) + QUERY_DELIMITER +
-                createQuery(SCOPE_KEY, String.join(" ", scope)) + QUERY_DELIMITER +
-                createQuery(RESPONSE_TYPE_KEY, responseType);
+        stringJoiner.add(createQuery(STATE_KEY, state));
+        stringJoiner.add(createQuery(NONCE_KEY, nonce));
+        stringJoiner.add(createQuery(RESPONSE_TYPE_KEY, responseType));
+        Optional.ofNullable(clientId).ifPresent(cId -> stringJoiner.add(createQuery(CLIENT_ID_KEY, cId)));
+        Optional.ofNullable(scope).ifPresentOrElse(
+                sc -> stringJoiner.add(createQuery(SCOPE_KEY, String.join(" ", sc))),
+                () -> {
+                    throw new AuthorizationRequestException("Scope required for authorization.");
+                });
+
+        return stringJoiner.toString();
     }
 
     private String createQuery(String key, String value) {

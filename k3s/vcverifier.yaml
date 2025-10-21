@@ -1,0 +1,176 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: verifier-key
+data:
+  did-key.pem: |-
+    -----BEGIN EC PRIVATE KEY-----
+    MHcCAQEEIIkH8tuQ/DaJ0DP1opZsLzljal5ZXtgtLKlUtbk48DxuoAoGCCqGSM49
+    AwEHoUQDQgAEWa5FVpyyMSj0iZfRbldvnKUX7w23d8elR/H4FOpJEimlmwPhSD1o
+    AscuDfaOilC8aq5/gf5MJf0q/MsRj9/EXg==
+    -----END EC PRIVATE KEY-----
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: verifier
+data:
+  server.yaml: |-
+    server: 
+      host: http://localhost:8080
+      port: 3000
+      staticDir: views/static
+      templateDir: views/
+    m2m:
+      authEnabled: false
+    logging:
+      level: DEBUG
+      logRequests: true
+      pathsToSkip:
+      - /metrics
+      - /health
+    verifier:
+      clientIdentification:
+        id: did:key:zDnaeWU3TUe2jE1PNJjqTsageXjQJTasfw5pNZycgunpSSFzp
+        keyPath: /signing-key/did-key.pem
+        requestKeyAlgorithm: ES256
+      did: did:key:zDnaeWU3TUe2jE1PNJjqTsageXjQJTasfw5pNZycgunpSSFzp
+      tirAddress: tir.org
+      supportedModes:
+        - byValue
+        - byReference
+    configRepo:
+      services:
+        - id: test-service-sd
+          defaultOidcScope: openid
+          authorizationType: "DEEPLINK"
+          authorizationPath: "/test-service-sd/authorization"
+          oidcScopes:     
+            "openid":
+              credentials:
+                - type: LegalPersonCredential
+                  trustedParticipantsLists: 
+                    - type: ebsi
+                      url: http://tir:8090
+                  trustedIssuersLists: 
+                    - "*"
+                  jwtInclusion:
+                    enabled: true
+                    fullInclusion: true          
+              dcql:
+                credentials:
+                  - id: legal-person-query
+                    format: "dc+sd-jwt"
+                    claims:
+                      - id: roles-claim
+                        path:
+                          - roles                      
+                    meta:
+                      vct_values:
+                        - LegalPersonCredential
+        - id: test-service-jwt
+          defaultOidcScope: openid
+          authorizationType: "DEEPLINK"
+          authorizationPath: "/test-service-jwt/authorization"
+          oidcScopes: 
+            "openid":
+              credentials:
+                - type: UserCredential
+                  trustedParticipantsLists: 
+                    - type: ebsi
+                      url: http://tir:8090
+                  trustedIssuersLists: 
+                    - "*"
+                  jwtInclusion:
+                    enabled: true
+                    fullInclusion: true         
+              dcql:
+                credentials: 
+                  - id: user-query
+                    format: "jwt_vc_json"
+                    multiple: true
+                    meta:
+                      type_values:
+                        - ["UserCredential"] 
+
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: vcverifier
+  labels:
+    app/name: vcverifier
+spec:
+  replicas: 1
+  revisionHistoryLimit: 3
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app/name: vcverifier
+  template:
+    metadata:
+      labels:
+        app/name: vcverifier
+    spec:
+      serviceAccountName: default
+      containers:
+        - name: vcverifier
+          image: "quay.io/wi_stefan/vcverifier:0.0.1-T"
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3000
+              name: backend
+          env:
+            - name: CONFIG_FILE
+              value: /config/server.yaml
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: backend
+            initialDelaySeconds: 3
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: backend
+            initialDelaySeconds: 4
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 30
+          resources:
+            null
+          ## workaround for missing db support
+          volumeMounts:
+            - mountPath: /config/
+              name: config-volume
+            - mountPath: /signing-key
+              name: signing-key
+      volumes:
+        - name: config-volume
+          configMap:
+            name: verifier
+        - name: signing-key
+          configMap:
+            name: verifier-key
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: verifier
+  labels:
+    app/name: vcverifier
+spec:
+  type: LoadBalancer
+  ports:
+    - name: http
+      port: 3000
+      targetPort: backend
+      protocol: TCP
+  selector:
+    app/name: vcverifier
