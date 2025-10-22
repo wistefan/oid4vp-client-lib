@@ -17,14 +17,9 @@ jobs:
           java-version: '21'
           java-package: jdk
 
-      - uses: azure/setup-kubectl@v4
-        id: install
+      - name: Ensure br_netfilter is enabled.
+        run: |
+          sudo modprobe br_netfilter
 
       - name: Run tests
-        continue-on-error: true
         run:  mvn clean verify -Pintegration-test
-
-      - name: Log
-        run: |
-          export KUBECONFIG=$(pwd)/target/k3s.yaml
-          kubectl logs -l app/name=tir
