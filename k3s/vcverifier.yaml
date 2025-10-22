@@ -41,6 +41,51 @@ data:
         - byReference
     configRepo:
       services:
+        - id: test-service
+          defaultOidcScope: default
+          authorizationType: "DEEPLINK"
+          oidcScopes:     
+            "sd":
+              credentials:
+                - type: LegalPersonCredential
+                  trustedParticipantsLists: 
+                    - type: ebsi
+                      url: http://tir:8090
+                  trustedIssuersLists: 
+                    - "*"
+                  jwtInclusion:
+                    enabled: true
+                    fullInclusion: true          
+              dcql:
+                credentials:
+                  - id: legal-person-query
+                    format: "dc+sd-jwt"
+                    claims:
+                      - id: roles-claim
+                        path:
+                          - roles                      
+                    meta:
+                      vct_values:
+                        - LegalPersonCredential
+            "default":
+              credentials:
+                - type: UserCredential
+                  trustedParticipantsLists: 
+                    - type: ebsi
+                      url: http://tir:8090
+                  trustedIssuersLists: 
+                    - "*"
+                  jwtInclusion:
+                    enabled: true
+                    fullInclusion: true         
+              dcql:
+                credentials: 
+                  - id: user-query
+                    format: "jwt_vc_json"
+                    multiple: true
+                    meta:
+                      type_values:
+                        - ["UserCredential"] 
         - id: test-service-sd
           defaultOidcScope: openid
           authorizationType: "DEEPLINK"

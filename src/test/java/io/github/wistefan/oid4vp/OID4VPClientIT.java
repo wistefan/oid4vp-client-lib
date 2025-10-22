@@ -22,6 +22,7 @@ import io.github.wistefan.oid4vp.model.TokenResponse;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -69,9 +70,10 @@ public class OID4VPClientIT {
 
     }
 
-    @ParameterizedTest
+    @DisplayName("An OpenID4VP flow should successfully return an access token.")
+    @ParameterizedTest(name = "{index} - {1}")
     @MethodSource("provideRequests")
-    public void test(RequestParameters requestParameters) throws Exception {
+    public void test(RequestParameters requestParameters, String message) throws Exception {
 
         String did = "did:key:zDnaehXH4gDLjLeWcACPyQX9TnvsKiQNt6KT7fdsfyW6fhEYA";
         PrivateKey privateKey = loadPrivateKey("EC", "secret/private-key.pem");
@@ -105,7 +107,7 @@ public class OID4VPClientIT {
         String jwtString = client.getAccessToken(requestParameters).thenApply(TokenResponse::getAccessToken).get();
 
         SignedJWT signedJWT = SignedJWT.parse(jwtString);
-        assertNotNull(signedJWT.getJWTClaimsSet().getClaim("verifiableCredential"));
+        assertNotNull(signedJWT.getJWTClaimsSet().getClaim("verifiableCredential"), message);
     }
 
     private static Stream<Arguments> provideRequests() {
@@ -113,11 +115,23 @@ public class OID4VPClientIT {
                 Arguments.of(new RequestParameters(URI.create("http://localhost:8080"),
                         "test-service-sd",
                         null,
-                        Set.of("openid"))),
+                        Set.of("openid")),
+                        "When requesting through the proxy, the process should properly go through the endpoint published under the test-service-sd."),
                 Arguments.of(new RequestParameters(URI.create("http://localhost:8080"),
                         "test-service-jwt",
                         null,
-                        Set.of("openid")))
+                        Set.of("openid")),
+                        "When requesting through the proxy, the process should properly go through the endpoint published under the test-service-jwt."),
+                Arguments.of(new RequestParameters(URI.create("http://localhost:3000"),
+                        "services/test-service",
+                        "test-service",
+                        Set.of("default")),
+                        "When requesting directly, the client-id test-service should be used with default scope."),
+                Arguments.of(new RequestParameters(URI.create("http://localhost:3000"),
+                        "services/test-service",
+                        "test-service",
+                        Set.of("sd")),
+                        "When requesting directly, the client-id test-service should be used with sd scope.")
         );
     }
 

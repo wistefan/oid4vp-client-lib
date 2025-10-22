@@ -11,6 +11,9 @@ data:
     }
 
     :8080 {
+      @oid-default path_regexp openid ^.*?/test-service/.well-known/openid-configuration$
+      rewrite @oid-sd /services/test-service/.well-known/openid-configuration
+    
       @oid-sd path_regexp openid ^.*?/test-service-sd/.well-known/openid-configuration$
       rewrite @oid-sd /services/test-service-sd/.well-known/openid-configuration
     
