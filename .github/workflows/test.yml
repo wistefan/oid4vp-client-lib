@@ -25,6 +25,6 @@ jobs:
         run:  mvn clean verify -Pintegration-test
 
       - name: Log
-        run: -|
+        run: |
           export KUBECONFIG=$(pwd)/target/k3s.yaml
-          kubectl get pods -l app/name=tir
+          kubectl logs -l app/name=tir
