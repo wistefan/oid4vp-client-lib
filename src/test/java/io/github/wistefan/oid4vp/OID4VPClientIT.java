@@ -92,7 +92,9 @@ public class OID4VPClientIT {
         deserializerModule.addDeserializer(CredentialFormat.class, new CredentialFormatDeserializer());
         deserializerModule.addDeserializer(TrustedAuthorityType.class, new TrustedAuthorityTypeDeserializer());
         objectMapper.registerModule(deserializerModule);
-        CredentialsRepository credentialsRepository = new FileSystemCredentialsRepository("/home/stefanw/git/wistefan/oid4vp-client-lib/src/test/resources/test-credentials", objectMapper);
+
+
+        CredentialsRepository credentialsRepository = new FileSystemCredentialsRepository(OID4VPClientIT.class.getClassLoader().getResource("test-credentials").getPath(), objectMapper);
 
         DCQLEvaluator dcqlEvaluator = new DCQLEvaluator(List.of(
                 new JwtCredentialEvaluator(),
@@ -113,24 +115,24 @@ public class OID4VPClientIT {
     private static Stream<Arguments> provideRequests() {
         return Stream.of(
                 Arguments.of(new RequestParameters(URI.create("http://localhost:8080"),
-                        "test-service-sd",
-                        null,
-                        Set.of("openid")),
+                                "test-service-sd",
+                                null,
+                                Set.of("openid")),
                         "When requesting through the proxy, the process should properly go through the endpoint published under the test-service-sd."),
                 Arguments.of(new RequestParameters(URI.create("http://localhost:8080"),
-                        "test-service-jwt",
-                        null,
-                        Set.of("openid")),
+                                "test-service-jwt",
+                                null,
+                                Set.of("openid")),
                         "When requesting through the proxy, the process should properly go through the endpoint published under the test-service-jwt."),
                 Arguments.of(new RequestParameters(URI.create("http://localhost:3000"),
-                        "services/test-service",
-                        "test-service",
-                        Set.of("default")),
+                                "services/test-service",
+                                "test-service",
+                                Set.of("default")),
                         "When requesting directly, the client-id test-service should be used with default scope."),
                 Arguments.of(new RequestParameters(URI.create("http://localhost:3000"),
-                        "services/test-service",
-                        "test-service",
-                        Set.of("sd")),
+                                "services/test-service",
+                                "test-service",
+                                Set.of("sd")),
                         "When requesting directly, the client-id test-service should be used with sd scope.")
         );
     }
