@@ -1,0 +1,74 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: caddy-config
+  namespace: default
+data:
+  Caddyfile: |
+    {
+      admin off
+      log on
+    }
+
+    :8080 {
+      @oid-default path_regexp openid ^.*?/test-service/.well-known/openid-configuration$
+      rewrite @oid-sd /services/test-service/.well-known/openid-configuration
+    
+      @oid-sd path_regexp openid ^.*?/test-service-sd/.well-known/openid-configuration$
+      rewrite @oid-sd /services/test-service-sd/.well-known/openid-configuration
+    
+      @oid-jwt path_regexp openid ^.*?/test-service-jwt/.well-known/openid-configuration$
+      rewrite @oid-jwt /services/test-service-jwt/.well-known/openid-configuration
+      
+      @jwt-api path /test-service-jwt/authorization
+      rewrite @jwt-api /api/v1/authorization?{query}&client_id=test-service-jwt
+    
+      @sd-api path /test-service-sd/authorization
+      rewrite @sd-api /api/v1/authorization?{query}&client_id=test-service-sd
+    
+      reverse_proxy verifier.default.svc.cluster.local:3000
+    }
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: caddy-proxy
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: caddy-proxy
+  template:
+    metadata:
+      labels:
+        app: caddy-proxy
+    spec:
+      containers:
+        - name: caddy
+          image: caddy:2-alpine
+          ports:
+            - containerPort: 8080
+          volumeMounts:
+            - name: caddy-config
+              mountPath: /etc/caddy
+      volumes:
+        - name: caddy-config
+          configMap:
+            name: caddy-config
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: caddy-proxy
+  namespace: default
+spec:
+  type: LoadBalancer
+  selector:
+    app: caddy-proxy
+  ports:
+    - port: 8080
+      targetPort: 8080
+      protocol: TCP
