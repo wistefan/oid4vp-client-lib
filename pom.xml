@@ -334,7 +334,7 @@
                         <artifactId>k3s-maven-plugin</artifactId>
                         <version>${version.io.kokuwa.maven.k3s-plugin}</version>
                         <configuration>
-                            <timeout>1200</timeout>
+                            <timeout>300</timeout>
                             <manifests>${project.basedir}/k3s/</manifests>
                             <portBindings>
                                 <portBinding>3000:3000</portBinding>
