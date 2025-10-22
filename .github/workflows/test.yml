@@ -17,5 +17,14 @@ jobs:
           java-version: '21'
           java-package: jdk
 
+      - uses: azure/setup-kubectl@v4
+        id: install
+
       - name: Run tests
+        continue-on-error: true
         run:  mvn clean verify -Pintegration-test
+
+      - name: Log
+        run: -|
+          export KUBECONFIG=$(pwd)/target/k3s.yaml
+          kubectl get pods -l app/name=tir

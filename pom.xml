@@ -352,13 +352,13 @@
                                     <goal>apply</goal>
                                 </goals>
                             </execution>
-                            <execution>
-                                <id>remove-k3s-cluster</id>
-                                <phase>post-integration-test</phase>
-                                <goals>
-                                    <goal>rm</goal>
-                                </goals>
-                            </execution>
+<!--                            <execution>-->
+<!--                                <id>remove-k3s-cluster</id>-->
+<!--                                <phase>post-integration-test</phase>-->
+<!--                                <goals>-->
+<!--                                    <goal>rm</goal>-->
+<!--                                </goals>-->
+<!--                            </execution>-->
                         </executions>
                     </plugin>
                 </plugins>
