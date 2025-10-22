@@ -18,4 +18,4 @@ jobs:
           java-package: jdk
 
       - name: Run tests
-        run: mvn clean test
+        run:  mvn clean verify -Pintegration-test

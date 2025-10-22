@@ -86,7 +86,7 @@
         <version.org.apache.maven.plugins.maven-gpg-plugin>3.2.8</version.org.apache.maven.plugins.maven-gpg-plugin>
         <version.org.apache.maven.plugins.maven-surfire-plugin>3.5.3
         </version.org.apache.maven.plugins.maven-surfire-plugin>
-        <version.org.apache.maven.plugins.maven-failsafe-plugin>3.5.4
+        <version.org.apache.maven.plugins.maven-failsafe-plugin>3.5.3
         </version.org.apache.maven.plugins.maven-failsafe-plugin>
 
 
@@ -307,21 +307,27 @@
             <id>integration-test</id>
             <build>
                 <plugins>
-                    <!-- skip unit tests -->
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-surefire-plugin</artifactId>
-                        <configuration>
-                            <skip>true</skip>
-                        </configuration>
-                    </plugin>
                     <!-- run integration-tests -->
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-failsafe-plugin</artifactId>
+                        <version>${version.org.apache.maven.plugins.maven-failsafe-plugin}</version>
                         <configuration>
                             <skip>false</skip>
+                            <failIfNoTests>true</failIfNoTests>
+                            <includes>
+                                <include>**/*IT.java</include>
+                            </includes>
                         </configuration>
+                        <executions>
+                            <execution>
+                                <id>integration-tests</id>
+                                <goals>
+                                    <goal>integration-test</goal>
+                                    <goal>verify</goal>
+                                </goals>
+                            </execution>
+                        </executions>
                     </plugin>
                     <plugin>
                         <groupId>io.kokuwa.maven</groupId>
@@ -344,6 +350,13 @@
                                     <goal>run</goal>
                                     <goal>image</goal>
                                     <goal>apply</goal>
+                                </goals>
+                            </execution>
+                            <execution>
+                                <id>remove-k3s-cluster</id>
+                                <phase>post-integration-test</phase>
+                                <goals>
+                                    <goal>rm</goal>
                                 </goals>
                             </execution>
                         </executions>
