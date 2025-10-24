@@ -164,7 +164,7 @@ spec:
       serviceAccountName: default
       containers:
         - name: vcverifier
-          image: "quay.io/wi_stefan/vcverifier:0.0.1-T"
+          image: "quay.io/fiware/vcverifier:6.3.1-pre-68"
           imagePullPolicy: Always
           ports:
             - containerPort: 3000
