@@ -41,13 +41,10 @@ public class AuthorizationFormResponse {
                 bodyJoiner.add(encode(VP_TOKEN_GRANT_TYPE) + QUERY_PARAM_DELIMITER + encode(vpToken)), () -> {
             throw new AuthorizationException("Authorization response does not contain a vp_token.");
         });
-        Optional.ofNullable(scopes).ifPresentOrElse(vt -> {
+        Optional.ofNullable(scopes).ifPresent(vt -> {
                     StringJoiner scopeJoiner = new StringJoiner(SCOPE_DELIMITER);
                     scopes.forEach(scopeJoiner::add);
                     bodyJoiner.add(encode(SCOPE_KEY) + QUERY_PARAM_DELIMITER + encode(scopeJoiner.toString()));
-                },
-                () -> {
-                    throw new AuthorizationException("Authorization response does not contain a scope.");
                 });
         if (clientId != null && !clientId.isEmpty()) {
             bodyJoiner.add(encode(CLIENT_ID_KEY) + QUERY_PARAM_DELIMITER + encode(clientId));

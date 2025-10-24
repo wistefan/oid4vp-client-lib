@@ -1,5 +1,6 @@
 package io.github.wistefan.oid4vp.config;
 
+import javax.annotation.Nullable;
 import java.net.URI;
 import java.util.Set;
 /**
@@ -10,5 +11,5 @@ import java.util.Set;
  * @param clientId - id of the client to get a token for
  * @param scope - scope to be requested
  */
-public record RequestParameters(URI host, String path, String clientId, Set<String> scope) {
+public record RequestParameters(URI host, String path, @Nullable String clientId, @Nullable Set<String> scope) {
 }
