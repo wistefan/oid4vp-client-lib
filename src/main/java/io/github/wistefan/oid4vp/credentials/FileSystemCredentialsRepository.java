@@ -9,16 +9,20 @@ import io.github.wistefan.dcql.model.credential.JwtCredential;
 import io.github.wistefan.dcql.model.credential.SdJwtCredential;
 import io.github.wistefan.oid4vp.exception.CredentialsAccessException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.ParseException;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Base64;
+import java.util.List;
 
 /**
  * Implementation of the {@link  CredentialsRepository}, providing access to Credentials stored inside a folder.
  */
+@Slf4j
 @RequiredArgsConstructor
 public class FileSystemCredentialsRepository implements CredentialsRepository {
 

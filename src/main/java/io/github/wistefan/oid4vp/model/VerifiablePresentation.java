@@ -1,5 +1,6 @@
 package io.github.wistefan.oid4vp.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -14,6 +15,7 @@ import java.util.List;
 @Accessors(chain = true)
 @EqualsAndHashCode
 @Data
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class VerifiablePresentation {
 
     @JsonProperty("@context")
