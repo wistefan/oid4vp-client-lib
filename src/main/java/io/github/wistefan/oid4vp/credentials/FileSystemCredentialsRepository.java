@@ -15,7 +15,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.ParseException;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Base64;
+import java.util.List;
 
 /**
  * Implementation of the {@link  CredentialsRepository}, providing access to Credentials stored inside a folder.
@@ -111,7 +113,6 @@ public class FileSystemCredentialsRepository implements CredentialsRepository {
 
     // decode the encoded disclosure to a {@link Disclosure} object for dcql-evaluation
     private Disclosure toDisclosure(String encoded, Object sdAlgorithm) throws IOException {
-        log.warn("Decode disclosure {}", encoded);
         byte[] sdBytes = Base64.getUrlDecoder().decode(encoded);
         List<?> sdContents = objectMapper.readValue(sdBytes, List.class);
         String salt = null;
