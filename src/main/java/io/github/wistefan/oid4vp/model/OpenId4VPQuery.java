@@ -1,5 +1,6 @@
 package io.github.wistefan.oid4vp.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
@@ -16,6 +17,7 @@ import static io.github.wistefan.oid4vp.OIDConstants.*;
  */
 @Slf4j
 @Data
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class OpenId4VPQuery {
 
     private String clientId;

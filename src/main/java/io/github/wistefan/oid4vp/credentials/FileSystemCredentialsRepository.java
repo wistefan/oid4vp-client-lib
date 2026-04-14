@@ -9,6 +9,7 @@ import io.github.wistefan.dcql.model.credential.JwtCredential;
 import io.github.wistefan.dcql.model.credential.SdJwtCredential;
 import io.github.wistefan.oid4vp.exception.CredentialsAccessException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -19,6 +20,7 @@ import java.util.*;
 /**
  * Implementation of the {@link  CredentialsRepository}, providing access to Credentials stored inside a folder.
  */
+@Slf4j
 @RequiredArgsConstructor
 public class FileSystemCredentialsRepository implements CredentialsRepository {
 
@@ -109,6 +111,7 @@ public class FileSystemCredentialsRepository implements CredentialsRepository {
 
     // decode the encoded disclosure to a {@link Disclosure} object for dcql-evaluation
     private Disclosure toDisclosure(String encoded, Object sdAlgorithm) throws IOException {
+        log.warn("Decode disclosure {}", encoded);
         byte[] sdBytes = Base64.getUrlDecoder().decode(encoded);
         List<?> sdContents = objectMapper.readValue(sdBytes, List.class);
         String salt = null;
