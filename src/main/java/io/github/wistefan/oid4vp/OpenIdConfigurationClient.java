@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.bouncycastle.util.Strings;
 
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.util.Arrays;
@@ -33,8 +34,7 @@ public class OpenIdConfigurationClient {
         if (requestParameters.host() == null) {
             throw new Oid4VPException("Request parameters did not contain a host");
         }
-        URI wellKnownAddress = requestParameters
-                .host()
+        URI wellKnownAddress = normalizeHost(requestParameters.host())
                 .resolve(buildPath(requestParameters.path()));
         HttpRequest wellKnownRequest = HttpRequest.newBuilder(wellKnownAddress).GET().build();
 
@@ -53,6 +53,45 @@ public class OpenIdConfigurationClient {
                     validateOpenIDConfiguration(openIdConfiguration, requestParameters);
                     return openIdConfiguration;
                 });
+    }
+
+    /**
+     * Normalize the host URI to scheme + host + port only, stripping any
+     * path, query, or fragment.  Also handles the case where the URI
+     * contains a literal {@code :-1} port (produced when code serializes
+     * {@link URI#getPort()} for a URI without an explicit port): such a
+     * port makes the authority server-based unparseable, so
+     * {@link URI#getHost()} returns {@code null}.  We fall back to
+     * parsing the authority string directly in that case.
+     */
+    private static URI normalizeHost(URI host) {
+        String hostname = host.getHost();
+        int port = host.getPort();
+
+        if (hostname == null) {
+            // Authority may contain a literal ":-1" or other non-standard port
+            // that prevents Java from parsing the host component.
+            String authority = host.getAuthority();
+            if (authority != null && authority.contains(":-1")) {
+                hostname = authority.substring(0, authority.indexOf(":-1"));
+                port = -1;
+            } else if (authority != null && authority.contains(":")) {
+                hostname = authority.substring(0, authority.lastIndexOf(':'));
+                try {
+                    port = Integer.parseInt(authority.substring(authority.lastIndexOf(':') + 1));
+                } catch (NumberFormatException e) {
+                    throw new Oid4VPException("Cannot parse port from host URI: " + host);
+                }
+            } else {
+                throw new Oid4VPException("Cannot determine hostname from URI: " + host);
+            }
+        }
+
+        try {
+            return new URI(host.getScheme(), null, hostname, port, null, null, null);
+        } catch (URISyntaxException e) {
+            throw new Oid4VPException("Invalid host URI: " + host, e);
+        }
     }
 
     private static String buildPath(String path) {
