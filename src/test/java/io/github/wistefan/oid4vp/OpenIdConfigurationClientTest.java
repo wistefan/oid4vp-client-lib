@@ -174,6 +174,30 @@ public class OpenIdConfigurationClientTest {
                         getValidOpenIdConfiguration(Set.of("openid", "test")),
                         URI.create("https://test.io/my/service/.well-known/openid-configuration"),
                         "If no specific scopes are requested, the authorization server needs to decide upon."
+                ),
+                Arguments.of(
+                        new RequestParameters(URI.create("https://test.io:-1"), "", "test", Set.of("openid", "test")),
+                        getValidOpenIdConfiguration(Set.of("openid", "test")),
+                        URI.create("https://test.io/.well-known/openid-configuration"),
+                        "A host URI with port -1 should be normalized to omit the port."
+                ),
+                Arguments.of(
+                        new RequestParameters(URI.create("https://test.io/some/path"), "", "test", Set.of("openid", "test")),
+                        getValidOpenIdConfiguration(Set.of("openid", "test")),
+                        URI.create("https://test.io/.well-known/openid-configuration"),
+                        "A path in the host URI should be stripped — only the path parameter matters."
+                ),
+                Arguments.of(
+                        new RequestParameters(URI.create("https://test.io:-1/some/path"), "/my/service", "test", Set.of("openid", "test")),
+                        getValidOpenIdConfiguration(Set.of("openid", "test")),
+                        URI.create("https://test.io/my/service/.well-known/openid-configuration"),
+                        "Both port -1 and a stray path in the host URI should be cleaned up."
+                ),
+                Arguments.of(
+                        new RequestParameters(URI.create("https://test.io:8443"), "", "test", Set.of("openid", "test")),
+                        getValidOpenIdConfiguration(Set.of("openid", "test")),
+                        URI.create("https://test.io:8443/.well-known/openid-configuration"),
+                        "An explicit non-default port should be preserved."
                 )
         );
     }
