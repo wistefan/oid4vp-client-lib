@@ -1,5 +1,6 @@
 package io.github.wistefan.oid4vp.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.github.wistefan.oid4vp.OIDConstants;
 import io.github.wistefan.oid4vp.exception.AuthorizationException;
 import io.github.wistefan.oid4vp.exception.AuthorizationRequestException;
@@ -20,6 +21,7 @@ import static io.github.wistefan.oid4vp.OIDConstants.*;
  */
 @Builder
 @Data
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class AuthorizationFormResponse {
 
 
