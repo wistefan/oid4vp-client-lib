@@ -41,8 +41,8 @@ public class FileSystemCredentialsRepository implements CredentialsRepository {
 
     @Override
     public List<Credential> getCredentials() {
-        try {
-            return Files.walk(Path.of(credentialsFolder)).filter(Files::isRegularFile)
+        try (var paths = Files.list(Path.of(credentialsFolder))) {
+            return paths.filter(Files::isRegularFile)
                     .map(this::getFromFile)
                     .toList();
 
