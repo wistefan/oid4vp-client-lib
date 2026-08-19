@@ -209,7 +209,8 @@ public class OID4VPClient {
                         .map(entry -> Map.entry(entry.getKey(), buildVP(entry.getValue())))
                         .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e1));
                 try {
-                    return Base64.getUrlEncoder().encodeToString(objectMapper.writeValueAsBytes(vpMap));
+                    // has to be unpadded, since OID4VP asks for base64url encoding as defined in RFC 7515, Section 2
+                    return Base64.getUrlEncoder().withoutPadding().encodeToString(objectMapper.writeValueAsBytes(vpMap));
                 } catch (JsonProcessingException e) {
                     throw new AuthorizationException("Was not able to encode the authorization response object.", e);
                 }
