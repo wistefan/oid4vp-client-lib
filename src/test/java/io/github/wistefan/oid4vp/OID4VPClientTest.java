@@ -368,6 +368,11 @@ public class OID4VPClientTest {
         if (requestedDcql.isEmpty() || requestedDcql.get().getCredentialSets() == null || requestedDcql.get().getCredentialSets().isEmpty()) {
             assertEquals(theMockToken, decodedToken, "In case no credential set is requested, only the token should be returned.");
         } else {
+            // Base64.getUrlDecoder() accepts padded and unpadded input alike, so the encoding has to be asserted
+            // explicitly. OID4VP requires base64url without padding(see RFC 7515, Section 2) and '=' is not part
+            // of the base64url alphabet, so its presence anywhere in the token means the encoder emitted padding.
+            assertFalse(decodedToken.contains("="),
+                    "The vp_token has to be base64url encoded without padding.");
             Map<String, String> resultMap = objectMapper.readValue(Base64.getUrlDecoder().decode(decodedToken), new TypeReference<Map<String, String>>() {
             });
             List<String> purposes = requestedDcql.get().getCredentialSets()
