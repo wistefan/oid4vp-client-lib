@@ -164,9 +164,9 @@ public class OID4VPClient {
         if (authorizationRequest.getNonce() == null || !authorizationRequest.getNonce().equals(authorizationQuery.nonce())) {
             throw new AuthorizationRequestException("Authorization request contains wrong nonce.");
         }
-        if (authorizationRequest.getState() == null || !authorizationRequest.getState().equals(authorizationQuery.state())) {
-            throw new AuthorizationRequestException("Authorization request contains wrong state.");
-        }
+        // The state of the authorization request belongs to the verifier, which may use its own session id
+        // there instead of echoing the client's state (VCVerifier >= 6.24.2 does). The vp_token goes straight to
+        // the token endpoint, so the client never receives a redirect that its own state would have to protect.
         if (authorizationRequest.getResponseType() == null || !authorizationRequest.getResponseType().equals(RESPONSE_TYPE_VP_TOKEN)) {
             throw new AuthorizationRequestException(String.format("Authorization request asks for response_type %s. Only %s is currently supported.", authorizationRequest.getResponseType(), RESPONSE_TYPE_VP_TOKEN));
         }
