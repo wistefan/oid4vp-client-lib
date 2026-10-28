@@ -251,11 +251,11 @@ public class OID4VPClientTest {
 
         mockOpenIdConfiguration(scopes, verifierHost, authorizationPath);
 
-        // mock the authorization request from the verifier
+        // mock the authorization request from the verifier, which answers with its own session id as state
         AuthorizationRequest authorizationRequest = new AuthorizationRequest()
                 .setClientId("did:web:my-verifier.org")
                 .setNonce("nonce")
-                .setState("state")
+                .setState("verifier-session-id")
                 .setResponseType("vp_token")
                 .setResponseMode("direct_post");
         dcqlQuery.ifPresent(authorizationRequest::setDcqlQuery);
@@ -296,17 +296,13 @@ public class OID4VPClientTest {
                                 "If an unsupported mode is requested, nothing should be presented."),
                         Arguments.of(getValidAuthorizationRequest().setResponseType("unsupported_type"), null, AuthorizationRequestException.class,
                                 "If an unsupported response_type is requested, nothing should be presented."),
-                        Arguments.of(getValidAuthorizationRequest().setState("wrongState"), null, AuthorizationRequestException.class,
-                                "If the wrong state is requested, nothing should be presented."),
-                        Arguments.of(getValidAuthorizationRequest().setState("wrongNonce"), null, AuthorizationRequestException.class,
+                        Arguments.of(getValidAuthorizationRequest().setNonce("wrongNonce"), null, AuthorizationRequestException.class,
                                 "If the wrong nonce is requested, nothing should be presented."),
                         Arguments.of(getValidAuthorizationRequest().setResponseMode(null), null, AuthorizationRequestException.class,
                                 "If an null mode is requested, nothing should be presented."),
                         Arguments.of(getValidAuthorizationRequest().setResponseType(null), null, AuthorizationRequestException.class,
                                 "If an null response_type is requested, nothing should be presented."),
-                        Arguments.of(getValidAuthorizationRequest().setState(null), null, AuthorizationRequestException.class,
-                                "If a null state is requested, nothing should be presented."),
-                        Arguments.of(getValidAuthorizationRequest().setState(null), null, AuthorizationRequestException.class,
+                        Arguments.of(getValidAuthorizationRequest().setNonce(null), null, AuthorizationRequestException.class,
                                 "If a null nonce is requested, nothing should be presented.")
                 )
         );
